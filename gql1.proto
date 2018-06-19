@@ -1,0 +1,20 @@
+syntax = "proto3";
+package gql;
+
+import "gql.proto";
+
+service Svx {
+    rpc MM (req) returns (res) {option (gql.type) = MUTATION;}
+    rpc MM1 (req) returns (res) {option (gql.type) = MUTATION;}
+    rpc MM2 (req) returns (res) {option (gql.type) = MUTATION;}
+    rpc MM3 (req) returns (res) {option (gql.type) = MUTATION;}
+    rpc MM4 (req) returns (res) {option (gql.type) = MUTATION;}
+    rpc SS1 (req) returns (res) {option (gql.type) = QUERY;}
+    rpc SS2 (req) returns (res) {option (gql.type) = QUERY;}
+    rpc SS3 (req) returns (res) {option (gql.type) = QUERY;}
+}
+
+message res {
+}
+message req {
+}

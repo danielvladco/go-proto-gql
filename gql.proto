@@ -1,0 +1,16 @@
+syntax = "proto2";
+package gql;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "gql";
+
+extend google.protobuf.MethodOptions {
+    optional Type type = 65020;
+}
+enum Type {
+    MUTATION = 0;
+    QUERY = 1;
+    SUBSCRIPTION = 2;
+}
+
