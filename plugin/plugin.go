@@ -1,16 +1,13 @@
 package plugin
 
 import (
-	"reflect"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"log"
-	"github.com/elysio-co/go-proto-validators"
 	"github.com/danielvladco/go-proto-gql"
-	"fmt"
 )
 
 type plugin struct {
@@ -20,12 +17,11 @@ type plugin struct {
 	//fmtPkg        generator.Single
 	//protoPkg      generator.Single
 	//validatorPkg  generator.Single
-	messages      map[string]*generator.Descriptor
 	useGogoImport bool
 }
 
 func NewPlugin(useGogoImport bool) generator.Plugin {
-	return &plugin{useGogoImport: useGogoImport, messages: make(map[string]*generator.Descriptor)}
+	return &plugin{useGogoImport: useGogoImport}
 }
 
 func (p *plugin) Name() string {
@@ -37,34 +33,10 @@ func (p *plugin) Init(g *generator.Generator) {
 }
 
 func (p *plugin) Generate(file *generator.FileDescriptor) {
-	p.PluginImports = generator.NewPluginImports(p.Generator)
-	for _, message := range file.Messages() {
-		//if len(message.DescriptorProto.Field) == 0 {
-		//	continue
-		//}
-
-		if message.DescriptorProto.GetOptions().GetMapEntry() {
-			//TODO
-			log.Println("implement maps")
-			continue
-		}
-
-		nested := ""
-		ln := len(message.GetNestedType())
-		for i, n := range message.GetNestedType() {
-			nested += n.GetName()
-			if ln != i {
-				nested += "."
-			}
-		}
-		message.GetNestedType()
-
-		p.messages["."+file.PackageName()+"."+nested+"."+message.GetName()] = message
-	}
-
 	//if !p.useGogoImport {
 	//	vanity.TurnOffGogoImport(file.FileDescriptorProto)
 	//}
+	p.PluginImports = generator.NewPluginImports(p.Generator)
 	//p.regexPkg = p.NewImport("regexp")
 	//p.fmtPkg = p.NewImport("fmt")
 	//p.validatorPkg = p.NewImport("github.com/mwitkow/go-proto-validators")
@@ -114,36 +86,49 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	//	p.P("type Mutation {\n\t", buff.String(), "\n}")
 	//}()
 
+	p.P("type Mutation {")
+	p.In()
 	for _, svc := range file.Service {
 		for _, rpc := range svc.Method {
 			//str := fmt.Sprintln()
 			switch getMethodType(rpc) {
 			case gql.Type_MUTATION:
-
-				//mutations <- str
-			case gql.Type_QUERY:
-				//queries <- str
-			case gql.Type_SUBSCRIPTION:
-				//not sure yet
+				i := getMessage(file.FileDescriptorProto, *rpc.InputType)
+				if i == nil {
+					println(*i.Name, "++==", *rpc.InputType)
+					break
+				}
+				o := getMessage(file.FileDescriptorProto, *rpc.OutputType)
+				if o != nil {
+					println(*o.Name, "++==", *rpc.OutputType)
+					break
+				}
+				p.P(file.Package, "_", svc.Name, "_", rpc.Name, "(input: ", i.Name, "!): ", o.Name, "_Out")
 			}
-			p.P("type Mutation {")
-			p.In()
-			_, ok := p.messages[rpc.GetInputType()]
-			p.P("# please ", ok)
-			p.P(file.Package, "_", svc.Name, "_", rpc.Name, "(input: ", rpc.GetInputType(), "!): ", rpc.GetOutputType(), "_Out")
-			p.Out()
-			p.P("}")
 		}
 	}
-	m := file.GetMessage("New.Type.E")
-	p.P("#11 ", m.GetName(), "#22 ",file.PackageName())
-	for n, m := range p.messages {
-
-		p.P("#", n, " > ", strings.Join(m.GetReservedName(), "."))
+	p.Out()
+	p.P("}")
+	p.P("type Query {")
+	p.In()
+	for _, svc := range file.Service {
+		for _, rpc := range svc.Method {
+			switch getMethodType(rpc) {
+			case gql.Type_QUERY:
+				i := getMessage(file.FileDescriptorProto, *rpc.InputType)
+				if i == nil {
+					break
+				}
+				o := getMessage(file.FileDescriptorProto, *rpc.OutputType)
+				if o != nil {
+					break
+				}
+				p.P(file.Package, "_", svc.Name, "_", rpc.Name, "(input: ", i.Name, "!): ", o.Name, "_Out")
+			}
+		}
 	}
-	//fmt.Printf("%+v", p.messages)
-
-	//end <- struct {}{}
+	p.Out()
+	p.P("}")
 	p.P("`")
 
 	//go func() {
@@ -173,6 +158,19 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	//		p.P("# unused message ", file.Name, "_", msg.Name)
 	//	}
 	//}
+}
+func getMessage(file *descriptor.FileDescriptorProto, typeName string) *descriptor.DescriptorProto {
+	typeName = strings.TrimPrefix(typeName, "." + *file.Package+".")
+	for _, msg := range file.GetMessageType() {
+		if msg.GetName() == typeName {
+			return msg
+		}
+		nes := file.GetNestedMessage(msg, strings.TrimPrefix(typeName, msg.GetName()+"."))
+		if nes != nil {
+			return nes
+		}
+	}
+	return nil
 }
 
 func getMethodType(rpc *descriptor.MethodDescriptorProto) gql.Type {
@@ -283,66 +281,17 @@ func (p *plugin) fieldIsProto3Map(file *generator.FileDescriptor, message *gener
 	return msg.GetOptions().GetMapEntry()
 }
 
-func (p *plugin) validatorWithAnyConstraint(fv *validator.FieldValidator) bool {
-	if fv == nil {
-		return false
-	}
-
-	// Need to use reflection in order to be future-proof for new types of constraints.
-	v := reflect.ValueOf(fv)
-	for i := 0; i < v.NumField(); i++ {
-		if v.Field(i).Interface() != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *plugin) graphQLType(message *generator.Descriptor, field *descriptor.FieldDescriptorProto) string {
-	var gqltype string
-	switch field.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		gqltype = fmt.Sprint("Float")
-	case descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32, descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64, descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64:
-		gqltype = fmt.Sprint("Int")
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		gqltype = fmt.Sprint("Boolean")
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		gqltype = fmt.Sprint("String")
-	case descriptor.FieldDescriptorProto_TYPE_GROUP:
-		//TODO
-		//panic("mapping a proto group type to graphql is unimplemented")
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		//TODO
-		//panic("mapping a proto enum type to graphql is unimplemented")
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		// TODO: fix this to be more robust about imported objects
-		//mobj := p.ObjectNamed(field.GetTypeName())
-		//// fmt.Fprint(os.Stderr, mobj.PackageName())
-		//if strings.HasPrefix(mobj.PackageName(), opseeTypes) {
-		//	gqltype = fmt.Sprint(schemaPkgName.Use(), ".", generator.CamelCaseSlice(mobj.TypeName()))
-		//	break
-		//}
-		//
-		//gqltype = p.graphQLTypeVarName(mobj)
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		// TODO send bytes
-		//gqltype = fmt.Sprint(schemaPkgName.Use(), ".", "ByteString")
-	default:
-		panic("unknown proto field type")
-	}
-
-	//if field.IsRepeated() && !p.IsMap(field) {
-	//	gqltype = fmt.Sprint(pkgName.Use(), ".NewList(", gqltype, ")")
-	//}
-	//
-	//if field.IsRequired() {
-	//	gqltype = fmt.Sprint(pkgName.Use(), ".NewNonNull(", gqltype, ")")
-	//}
-
-	return gqltype
-}
+//func (p *plugin) validatorWithAnyConstraint(fv *validator.FieldValidator) bool {
+//	if fv == nil {
+//		return false
+//	}
+//
+//	 Need to use reflection in order to be future-proof for new types of constraints.
+//v := reflect.ValueOf(fv)
+//for i := 0; i < v.NumField(); i++ {
+//	if v.Field(i).Interface() != nil {
+//		return true
+//	}
+//}
+//return false
+//}
