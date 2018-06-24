@@ -51,7 +51,7 @@ func main() {
 	gen.GeneratePlugin(plugin.NewPlugin(useGogoImport))
 
 	for i := 0; i < len(gen.Response.File); i++ {
-		gen.Response.File[i].Name = proto.String(strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".graphql", -1))
+		gen.Response.File[i].Name = proto.String(strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gql.pb.go", -1))
 	}
 
 	// Send back the results.
