@@ -11,7 +11,6 @@ import (
 
 	"github.com/danielvladco/go-proto-gql/plugin"
 	"log"
-	"path"
 )
 
 //go:generate protoc --go_out=../ ../*.proto
@@ -27,24 +26,6 @@ func main() {
 		gen.Error(err, "parsing input proto")
 	}
 
-	if len(gen.Request.FileToGenerate) == 0 {
-		gen.Fail("no files to generate")
-	}
-	dir, _ := os.Getwd()
-	gopath := os.Getenv("GOPATH")
-	if strings.Trim(gopath, " ") == "" {
-		log.Fatal("unable to locate $GOPATH environment variable")
-	}
-
-	ss := strings.SplitN(dir, path.Join(gopath, "src/"), 2)
-	if len(ss) < 2 {
-		log.Fatal("plugin wa used outside of $GOPATH scope (to use this plugin you must call it from within a $GOPATH)")
-	}
-
-	log.Println(strings.Trim(ss[1], "/"))
-	for _, m := range gen.Response.File {
-		log.Println(m.Name)
-	}
 	useGogoImport := false
 	// Match parsing algorithm from Generator.CommandLineParameters
 	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {

@@ -2,11 +2,16 @@
 
 package gqlgen
 
-type Error struct {
-	Code    *string `json:"code"`
-	Message *string `json:"message"`
+type Description struct {
+	Description string `json:"description"`
 }
-type ValidationErr struct {
-	Field   *string `json:"field"`
-	Message *string `json:"message"`
+type Details interface{}
+type Error struct {
+	Code    *string   `json:"code"`
+	Message *string   `json:"message"`
+	Details []Details `json:"details"`
+}
+type Validation struct {
+	Field       *string `json:"field"`
+	Description *string `json:"description"`
 }

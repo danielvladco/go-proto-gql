@@ -58,17 +58,26 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 var schema = `
+
+type Error {
+    code: String
+    message: String
+    details: [Details]
+}
+union Details = Description | ValidationErr
+type Description {
+    descriptionL String!
+}
+type Validation {
+    field: String
+    description: String
+}
 schema {
 	query: Query
 	mutation: Mutation
+	subscription: Subscription
 }
 type Mutation {
-type Error {
-	code: String
-	message: String
-	details: [Details!]
-}
-union Details = String | Int | Boolean | Float | ValidationErr
 	gqlServiceSignIn(req: GqlSignInReq): GqlSignInResError
 	gqlServiceGetCurrentAccount(req: GqlGetCurrentAccountReq): GqlGetCurrentAccountResError
 	gqlServiceSignUpWithEmail(req: GqlSignUpWithEmailReq): GqlSignUpWithEmailResError
@@ -80,33 +89,34 @@ union Details = String | Int | Boolean | Float | ValidationErr
 	gqlServiceChangePassword(req: GqlChangePasswordReq): GqlChangePasswordResError
 	gqlServiceRequestChangeEmail(req: GqlRequestChangeEmailReq): GqlRequestChangeEmailResError
 	gqlServiceChangeEmail(req: GqlChangeEmailReq): GqlChangeEmailResError
-	gqlServiceRequestDeleteAccount(req: GqlRequestDeleteAccountReq): GqlRequestDeleteAccountResError
-	gqlServiceDeleteAccount(req: GqlDeleteAccountReq): GqlDeleteAccountResError
 }
 type Query {
+	gqlServiceDeleteAccount(req: GqlDeleteAccountReq): GqlDeleteAccountResError
 }
-union GqlResetPasswordResError = GqlResetPasswordRes | Error
-union GqlChangeEmailResError = GqlChangeEmailRes | Error
-union GqlDeleteAccountResError = GqlDeleteAccountRes | Error
-union GqlSignInResError = GqlSignInRes | Error
-union GqlGetCurrentAccountResError = GqlGetCurrentAccountRes | Error
-union GqlSignUpWithEmailResError = GqlSignUpWithEmailRes | Error
-union GqlResendConfirmationEmailResError = GqlResendConfirmationEmailRes | Error
+type Subscription {
+	gqlServiceRequestDeleteAccount(req: GqlRequestDeleteAccountReq): GqlRequestDeleteAccountResError
+}
 union GqlConfirmEmailResError = GqlConfirmEmailRes | Error
 union GqlForgotPasswordResError = GqlForgotPasswordRes | Error
 union GqlCheckResetPasswordTokenResError = GqlCheckResetPasswordTokenRes | Error
+union GqlResetPasswordResError = GqlResetPasswordRes | Error
 union GqlChangePasswordResError = GqlChangePasswordRes | Error
-union GqlRequestChangeEmailResError = GqlRequestChangeEmailRes | Error
+union GqlGetCurrentAccountResError = GqlGetCurrentAccountRes | Error
+union GqlSignUpWithEmailResError = GqlSignUpWithEmailRes | Error
+union GqlResendConfirmationEmailResError = GqlResendConfirmationEmailRes | Error
+union GqlDeleteAccountResError = GqlDeleteAccountRes | Error
 union GqlRequestDeleteAccountResError = GqlRequestDeleteAccountRes | Error
-input GqlCheckResetPasswordTokenReq {
+union GqlSignInResError = GqlSignInRes | Error
+union GqlRequestChangeEmailResError = GqlRequestChangeEmailRes | Error
+union GqlChangeEmailResError = GqlChangeEmailRes | Error
+input GqlConfirmEmailReq {
+	token: String!
+}
+input GqlChangeEmailReq {
 	token: String!
 }
 input GqlDeleteAccountReq {
 	token: String
-}
-input GqlSignInReq {
-	email: String!
-	password: String!
 }
 input GqlGetCurrentAccountReq {
 }
@@ -114,58 +124,45 @@ input GqlSignUpWithEmailReq {
 	email: String!
 	password: String!
 }
-input GqlConfirmEmailReq {
-	token: String!
-}
-input GqlRequestChangeEmailReq {
-	newEmail: String!
-}
-input GqlChangeEmailReq {
-	token: String!
-}
-input GqlRequestDeleteAccountReq {
-}
 input GqlResendConfirmationEmailReq {
+	data: GqlResendConfirmationEmailReqData
 	accountId: String!
 }
 input GqlForgotPasswordReq {
 	email: String!
 }
+input GqlCheckResetPasswordTokenReq {
+	token: String!
+}
 input GqlResetPasswordReq {
 	token: String!
-	password: String!
+	password: [String]!
 }
 input GqlChangePasswordReq {
 	oldPassword: String!
 	newPassword: String!
 }
-type GqlConfirmEmailRes {
+input GqlRequestChangeEmailReq {
+	newEmail: String!
 }
-type GqlRequestDeleteAccountRes {
+input GqlSignInReq {
+	email: String!
+	password: String!
 }
-type GqlChangeEmailRes {
-	account: GqlChangeEmailRes
-}
-type GqlCheckResetPasswordTokenRes {
-}
-type GqlChangePasswordRes {
-}
-type GqlRequestChangeEmailRes {
-}
-type GqlSignInRes {
-	account: GqlSignInRes
-}
-type GqlGetCurrentAccountRes {
-	account: GqlGetCurrentAccountRes
-}
-type GqlSignUpWithEmailRes {
-	account: GqlSignUpWithEmailRes
-}
-type GqlResendConfirmationEmailRes {
+input GqlRequestDeleteAccountReq {
 }
 type GqlForgotPasswordRes {
 }
+type GqlCheckResetPasswordTokenRes {
+}
 type GqlResetPasswordRes {
+}
+type GqlChangePasswordRes {
+}
+type GqlSignInRes {
+	account: GqlAccount
+}
+type GqlRequestChangeEmailRes {
 }
 type GqlDeleteAccountRes {
 }
@@ -173,5 +170,25 @@ type GqlAccount {
 	accountId: String
 	email: String
 	emailConfirmed: Boolean
+}
+type GqlGetCurrentAccountRes {
+	account: [GqlAccount]
+}
+type GqlSignUpWithEmailRes {
+	account: GqlAccount
+}
+type GqlResendConfirmationEmailRes {
+}
+type GqlConfirmEmailRes {
+}
+type GqlChangeEmailRes {
+	account: GqlAccount
+}
+type GqlRequestDeleteAccountRes {
+}
+enum GqlResendConfirmationEmailReqData {
+	DDD
+	NNN
+	GGG
 }
 `

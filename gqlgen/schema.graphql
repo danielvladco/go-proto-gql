@@ -1,6 +1,11 @@
 schema {
     query: Query
     mutation: Mutation
+    subscription: Subscription
+}
+
+type Subscription {
+    WatchTest(input: TestIn): Test
 }
 
 type Mutation {
@@ -48,12 +53,14 @@ input PeriodIn {
 type Error {
     code: String
     message: String
-#    details: [Details]
+    details: [Details]
 }
 
-#union Details = String | Int | Boolean | Float | ValidationErr
-
-type ValidationErr {
+union Details = Description | Validation
+type Description {
+    description: String!
+}
+type Validation {
     field: String
-    message: String
+    description: String
 }

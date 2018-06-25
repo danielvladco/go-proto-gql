@@ -18,6 +18,10 @@ func main() {
 type res struct {
 }
 
+func (r *res) Subscription_WatchTest(ctx context.Context, input *types.Test) (<-chan *types.Test, error) {
+	panic("implement me")
+}
+
 func (r *res) Mutation_PostTest(ctx context.Context, input *types.Test) (*types.Test, error) {
 	return input, nil
 }

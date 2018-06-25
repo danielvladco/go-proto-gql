@@ -16,14 +16,19 @@ service Service {
     rpc ChangePassword (ChangePasswordReq) returns (ChangePasswordRes);
     rpc RequestChangeEmail (RequestChangeEmailReq) returns (RequestChangeEmailRes);
     rpc ChangeEmail (ChangeEmailReq) returns (ChangeEmailRes);
-    rpc RequestDeleteAccount (RequestDeleteAccountReq) returns (RequestDeleteAccountRes);
-    rpc DeleteAccount (DeleteAccountReq) returns (DeleteAccountRes);
+    rpc RequestDeleteAccount (RequestDeleteAccountReq) returns (RequestDeleteAccountRes) {
+        option (gql.type) = SUBSCRIPTION;
+    };
+    rpc DeleteAccount (DeleteAccountReq) returns (DeleteAccountRes) {
+        option (gql.type) = QUERY;
+    }
 }
 
 message SignInReq {
     string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}];
     string password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
 }
+
 message GetCurrentAccountReq {
 }
 message SignUpWithEmailReq {
@@ -31,6 +36,12 @@ message SignUpWithEmailReq {
     string password = 4 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
 }
 message ResendConfirmationEmailReq {
+    enum Data {
+        DDD = 0;
+        NNN = 1;
+        GGG = 2;
+    }
+    Data data = 2;
     string account_id = 1 [(validator.field) = {string_not_empty: true}];
 }
 message SignOutReq {
@@ -52,7 +63,7 @@ message ChangeEmailReq {
 }
 message ResetPasswordReq {
     string token = 1 [(validator.field) = {string_not_empty: true}];
-    string password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
+    repeated string password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
 }
 message ChangePasswordReq {
     string old_password = 1 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
@@ -73,7 +84,7 @@ message SignUpWithEmailRes {
 message ConfirmEmailRes {
 }
 message GetCurrentAccountRes {
-    Account account = 1;
+    repeated Account account = 1;
 }
 message CheckResetPasswordTokenRes {
 }
