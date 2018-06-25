@@ -8,8 +8,41 @@ It is generated from these files:
 	test.proto
 
 It has these top-level messages:
-	Res
-	Req
+	SignInReq
+	GetCurrentAccountReq
+	SignUpWithEmailReq
+	ResendConfirmationEmailReq
+	SignOutReq
+	ConfirmEmailReq
+	ForgotPasswordReq
+	CheckResetPasswordTokenReq
+	RequestChangeEmailReq
+	ChangeEmailReq
+	ResetPasswordReq
+	ChangePasswordReq
+	RequestDeleteAccountReq
+	DeleteAccountReq
+	SignInRes
+	SignUpWithEmailRes
+	ConfirmEmailRes
+	GetCurrentAccountRes
+	CheckResetPasswordTokenRes
+	SignOutRes
+	ResendConfirmationEmailRes
+	ForgotPasswordRes
+	ResetPasswordRes
+	ChangePasswordRes
+	RequestChangeEmailRes
+	ChangeEmailRes
+	RequestDeleteAccountRes
+	DeleteAccountRes
+	Account
+	SignedUpWithEmail
+	EmailConfirmed
+	PasswordReset
+	PasswordChanged
+	EmailChanged
+	AccountDeleted
 */
 package gql
 
@@ -17,6 +50,7 @@ import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import _ "."
+import _ "github.com/mwitkow/go-proto-validators"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -24,12 +58,120 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 var schema = `
-type schema {
+schema {
 	query: Query
 	mutation: Mutation
 }
 type Mutation {
+type Error {
+	code: String
+	message: String
+	details: [Details!]
+}
+union Details = String | Int | Boolean | Float | ValidationErr
+	gqlServiceSignIn(req: GqlSignInReq): GqlSignInResError
+	gqlServiceGetCurrentAccount(req: GqlGetCurrentAccountReq): GqlGetCurrentAccountResError
+	gqlServiceSignUpWithEmail(req: GqlSignUpWithEmailReq): GqlSignUpWithEmailResError
+	gqlServiceResendConfirmationEmail(req: GqlResendConfirmationEmailReq): GqlResendConfirmationEmailResError
+	gqlServiceConfirmEmail(req: GqlConfirmEmailReq): GqlConfirmEmailResError
+	gqlServiceForgotPassword(req: GqlForgotPasswordReq): GqlForgotPasswordResError
+	gqlServiceCheckResetPasswordToken(req: GqlCheckResetPasswordTokenReq): GqlCheckResetPasswordTokenResError
+	gqlServiceResetPassword(req: GqlResetPasswordReq): GqlResetPasswordResError
+	gqlServiceChangePassword(req: GqlChangePasswordReq): GqlChangePasswordResError
+	gqlServiceRequestChangeEmail(req: GqlRequestChangeEmailReq): GqlRequestChangeEmailResError
+	gqlServiceChangeEmail(req: GqlChangeEmailReq): GqlChangeEmailResError
+	gqlServiceRequestDeleteAccount(req: GqlRequestDeleteAccountReq): GqlRequestDeleteAccountResError
+	gqlServiceDeleteAccount(req: GqlDeleteAccountReq): GqlDeleteAccountResError
 }
 type Query {
+}
+union GqlResetPasswordResError = GqlResetPasswordRes | Error
+union GqlChangeEmailResError = GqlChangeEmailRes | Error
+union GqlDeleteAccountResError = GqlDeleteAccountRes | Error
+union GqlSignInResError = GqlSignInRes | Error
+union GqlGetCurrentAccountResError = GqlGetCurrentAccountRes | Error
+union GqlSignUpWithEmailResError = GqlSignUpWithEmailRes | Error
+union GqlResendConfirmationEmailResError = GqlResendConfirmationEmailRes | Error
+union GqlConfirmEmailResError = GqlConfirmEmailRes | Error
+union GqlForgotPasswordResError = GqlForgotPasswordRes | Error
+union GqlCheckResetPasswordTokenResError = GqlCheckResetPasswordTokenRes | Error
+union GqlChangePasswordResError = GqlChangePasswordRes | Error
+union GqlRequestChangeEmailResError = GqlRequestChangeEmailRes | Error
+union GqlRequestDeleteAccountResError = GqlRequestDeleteAccountRes | Error
+input GqlCheckResetPasswordTokenReq {
+	token: String!
+}
+input GqlDeleteAccountReq {
+	token: String
+}
+input GqlSignInReq {
+	email: String!
+	password: String!
+}
+input GqlGetCurrentAccountReq {
+}
+input GqlSignUpWithEmailReq {
+	email: String!
+	password: String!
+}
+input GqlConfirmEmailReq {
+	token: String!
+}
+input GqlRequestChangeEmailReq {
+	newEmail: String!
+}
+input GqlChangeEmailReq {
+	token: String!
+}
+input GqlRequestDeleteAccountReq {
+}
+input GqlResendConfirmationEmailReq {
+	accountId: String!
+}
+input GqlForgotPasswordReq {
+	email: String!
+}
+input GqlResetPasswordReq {
+	token: String!
+	password: String!
+}
+input GqlChangePasswordReq {
+	oldPassword: String!
+	newPassword: String!
+}
+type GqlConfirmEmailRes {
+}
+type GqlRequestDeleteAccountRes {
+}
+type GqlChangeEmailRes {
+	account: GqlChangeEmailRes
+}
+type GqlCheckResetPasswordTokenRes {
+}
+type GqlChangePasswordRes {
+}
+type GqlRequestChangeEmailRes {
+}
+type GqlSignInRes {
+	account: GqlSignInRes
+}
+type GqlGetCurrentAccountRes {
+	account: GqlGetCurrentAccountRes
+}
+type GqlSignUpWithEmailRes {
+	account: GqlSignUpWithEmailRes
+}
+type GqlResendConfirmationEmailRes {
+}
+type GqlForgotPasswordRes {
+}
+type GqlResetPasswordRes {
+}
+type GqlDeleteAccountRes {
+}
+type GqlAccount {
+	accountId: String
+	email: String
+	emailConfirmed: Boolean
 }
 `

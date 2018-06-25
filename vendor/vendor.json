@@ -1,0 +1,115 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "QdSIO+gp41BqNti0ZDVdXvfDvDo=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "5ed622c449da6d44c3c8329331ff47a9e5844f71",
+			"revisionTime": "2018-06-05T20:25:52Z"
+		},
+		{
+			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
+			"path": "github.com/pkg/errors",
+			"revision": "816c9085562cd7ee03e7f8188a1cfd942858cded",
+			"revisionTime": "2018-03-11T21:45:15Z"
+		},
+		{
+			"checksumSHA1": "oBAA1FDSEK94fx9THjKWn0Ky1ew=",
+			"path": "github.com/vektah/gqlgen",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "AgB/ddy2pxCk2dfUCU6Z9IsirQA=",
+			"path": "github.com/vektah/gqlgen/codegen",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "Nqxk4gPmbIpvxFGikQPLGQlwue0=",
+			"path": "github.com/vektah/gqlgen/codegen/templates",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "okYxhwSXcIafEKuQ67k4QK32oD4=",
+			"path": "github.com/vektah/gqlgen/graphql",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "EbHFXCWzO2CTxz00v88GvbpuSkY=",
+			"path": "github.com/vektah/gqlgen/handler",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "osabVc7N5MalTqnpO2ridK2hjBg=",
+			"path": "github.com/vektah/gqlgen/neelance/common",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "BDWuhjrd6KQGhNsklPyg8uMTnBw=",
+			"path": "github.com/vektah/gqlgen/neelance/errors",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "vm2srylWNZnZun6GlLXB4M7BjY0=",
+			"path": "github.com/vektah/gqlgen/neelance/introspection",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "7BWR29rEgm+0TUjHu9kMwyNuU3Y=",
+			"path": "github.com/vektah/gqlgen/neelance/query",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "xe0VeK1/Bp2pfZaAymu/F8xatJc=",
+			"path": "github.com/vektah/gqlgen/neelance/schema",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "lhLGD590aZ75NQobQS1gBAZCMGA=",
+			"path": "github.com/vektah/gqlgen/neelance/validation",
+			"revision": "a39c63a5ef9dadec023241f049d511380dbce189",
+			"revisionTime": "2018-06-23T01:12:26Z"
+		},
+		{
+			"checksumSHA1": "AsL/fTkY1p1HNVSikhVZJd++Nrk=",
+			"path": "golang.org/x/tools/go/ast/astutil",
+			"revision": "3c1bb8b785f2aa4d86f83a0cd87fc1df046c60de",
+			"revisionTime": "2018-06-24T17:07:16Z"
+		},
+		{
+			"checksumSHA1": "/UCuUGzk9/QJTUcTkYDRdCas3Tc=",
+			"path": "golang.org/x/tools/go/buildutil",
+			"revision": "3c1bb8b785f2aa4d86f83a0cd87fc1df046c60de",
+			"revisionTime": "2018-06-24T17:07:16Z"
+		},
+		{
+			"checksumSHA1": "ZpAR2KupZto/mWf9zu5e6IKDWt0=",
+			"path": "golang.org/x/tools/go/loader",
+			"revision": "3c1bb8b785f2aa4d86f83a0cd87fc1df046c60de",
+			"revisionTime": "2018-06-24T17:07:16Z"
+		},
+		{
+			"checksumSHA1": "5SMcpEK2/2oDBWAZlNaDowkb6lE=",
+			"path": "golang.org/x/tools/imports",
+			"revision": "3c1bb8b785f2aa4d86f83a0cd87fc1df046c60de",
+			"revisionTime": "2018-06-24T17:07:16Z"
+		},
+		{
+			"checksumSHA1": "raf03aN7Im1I492XC3DafXo0KsQ=",
+			"path": "golang.org/x/tools/internal/fastwalk",
+			"revision": "3c1bb8b785f2aa4d86f83a0cd87fc1df046c60de",
+			"revisionTime": "2018-06-24T17:07:16Z"
+		}
+	],
+	"rootPath": "github.com/danielvladco/go-proto-gql"
+}

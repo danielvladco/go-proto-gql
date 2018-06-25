@@ -1,0 +1,59 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type Mutation {
+    PostTest(input: TestIn): Test
+}
+
+type Query {
+    GetTest(input: TestIn): Test
+}
+
+type Test {
+    name: String
+    phone: String
+    companies: [Company!]
+}
+
+type Company {
+    name: String!
+    period: Period
+}
+
+type Period {
+    To: String
+    From: String!
+    Current: Boolean
+}
+
+input TestIn {
+    name: String
+    phone: String
+    companies: [CompanyIn!]
+}
+
+input CompanyIn {
+    name: String!
+    period: PeriodIn
+}
+
+input PeriodIn {
+    To: String
+    From: String!
+    Current: Boolean
+}
+
+type Error {
+    code: String
+    message: String
+#    details: [Details]
+}
+
+#union Details = String | Int | Boolean | Float | ValidationErr
+
+type ValidationErr {
+    field: String
+    message: String
+}

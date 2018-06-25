@@ -3,25 +3,33 @@ package plugin
 import (
 	"strings"
 
+	"fmt"
+	"github.com/danielvladco/go-proto-gql"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
-	"log"
-	"github.com/danielvladco/go-proto-gql"
+	"github.com/mwitkow/go-proto-validators"
+	"unicode"
 )
+
+type Message struct {
+	*descriptor.DescriptorProto
+	io bool
+}
 
 type plugin struct {
 	*generator.Generator
 	generator.PluginImports
-	//regexPkg      generator.Single
-	//fmtPkg        generator.Single
-	//protoPkg      generator.Single
-	//validatorPkg  generator.Single
+	inputs  map[string]*Message
+	outputs map[string]*Message
+	types   []*descriptor.DescriptorProto
+	ins     []*descriptor.DescriptorProto
+
 	useGogoImport bool
 }
 
 func NewPlugin(useGogoImport bool) generator.Plugin {
-	return &plugin{useGogoImport: useGogoImport}
+	return &plugin{useGogoImport: useGogoImport, outputs: make(map[string]*Message), inputs: make(map[string]*Message)}
 }
 
 func (p *plugin) Name() string {
@@ -33,134 +41,150 @@ func (p *plugin) Init(g *generator.Generator) {
 }
 
 func (p *plugin) Generate(file *generator.FileDescriptor) {
-	//if !p.useGogoImport {
-	//	vanity.TurnOffGogoImport(file.FileDescriptorProto)
-	//}
 	p.PluginImports = generator.NewPluginImports(p.Generator)
-	//p.regexPkg = p.NewImport("regexp")
-	//p.fmtPkg = p.NewImport("fmt")
-	//p.validatorPkg = p.NewImport("github.com/mwitkow/go-proto-validators")
-
-	//for _, msg := range file.Messages() {
-	//	if msg.DescriptorProto.GetOptions().GetMapEntry() {
-	//		continue
-	//	}
-	//	if gogoproto.IsProto3(file.FileDescriptorProto) {
-	//		p.generateProto3Message(file, msg)
-	//	} else {
-	//		p.generateProto2Message(file, msg)
-	//	}
-	//}
-
-	//mutations := make(chan string, 100)
-	//queries := make(chan string, 100)
-	//end := make(chan struct{})
 	p.P("var schema = `")
-	p.P("type schema {\n\tquery: Query\n\tmutation: Mutation\n}")
-	//go func() {
-	//	buff := &bytes.Buffer{}
-	//	for {
-	//		select {
-	//		case rpc := <-mutations:
-	//			buff.WriteString(rpc)
-	//			buff.WriteString("\n\t")
-	//		case <-end:
-	//			break
-	//		}
-	//	}
-	//	p.P("type Mutation {\n\t", buff.String(), "}")
-	//}()
-	//
-	//go func() {
-	//	print(11112)
-	//	buff := &bytes.Buffer{}
-	//	for {
-	//		select {
-	//		case rpc := <-queries:
-	//			buff.WriteString(rpc)
-	//		case <-end:
-	//			break
-	//		}
-	//	}
-	//
-	//	p.P("type Mutation {\n\t", buff.String(), "\n}")
-	//}()
-
+	p.P("schema {\n\tquery: Query\n\tmutation: Mutation\n}")
 	p.P("type Mutation {")
+	p.P("type Error {\n\tcode: String\n\tmessage: String\n\tdetails: [Details!]\n}")
+	p.P("union Details = String | Int | Boolean | Float | ValidationErr")
 	p.In()
 	for _, svc := range file.Service {
 		for _, rpc := range svc.Method {
-			//str := fmt.Sprintln()
 			switch getMethodType(rpc) {
 			case gql.Type_MUTATION:
-				i := getMessage(file.FileDescriptorProto, *rpc.InputType)
-				if i == nil {
-					println(*i.Name, "++==", *rpc.InputType)
-					break
-				}
-				o := getMessage(file.FileDescriptorProto, *rpc.OutputType)
-				if o != nil {
-					println(*o.Name, "++==", *rpc.OutputType)
-					break
-				}
-				p.P(file.Package, "_", svc.Name, "_", rpc.Name, "(input: ", i.Name, "!): ", o.Name, "_Out")
+				p.P(Field(file.GetPackage()), svc.Name, rpc.Name, "(req: ", formatSchema(rpc.GetInputType()), "): ", formatSchema(rpc.GetOutputType(), "error"))
+				p.inputs[rpc.GetInputType()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
+				p.outputs[rpc.GetOutputType()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
 			}
 		}
 	}
 	p.Out()
-	p.P("}")
-	p.P("type Query {")
+	p.P("}\ntype Query {")
 	p.In()
 	for _, svc := range file.Service {
 		for _, rpc := range svc.Method {
 			switch getMethodType(rpc) {
 			case gql.Type_QUERY:
-				i := getMessage(file.FileDescriptorProto, *rpc.InputType)
-				if i == nil {
-					break
-				}
-				o := getMessage(file.FileDescriptorProto, *rpc.OutputType)
-				if o != nil {
-					break
-				}
-				p.P(file.Package, "_", svc.Name, "_", rpc.Name, "(input: ", i.Name, "!): ", o.Name, "_Out")
+				p.P(Field(file.GetPackage()), svc.Name, rpc.Name, "(req: ", formatSchema(rpc.GetInputType()), "): ", formatSchema(rpc.GetOutputType(), "error"))
+				p.inputs[rpc.GetInputType()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
+				p.outputs[rpc.GetOutputType()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
 			}
 		}
 	}
 	p.Out()
 	p.P("}")
-	p.P("`")
 
-	//go func() {
-	//	buff := &bytes.Buffer{}
-	//	for {
-	//		select {
-	//		case input := <-inputs:
-	//			file.GetMessage(*input)
-	//		case time.After(2 * time.Second):
-	//			return
-	//		}
-	//	}
-	//	p.P(buff.String())
-	//}()
-	//
-	//for _, msg := range file.Messages() {
-	//	switch {
-	//	case contains(inputs, msg.Name):
-	//		for _, field := range msg.Field {
-	//			if field.Type != nil && *field.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-	//
-	//			}
-	//		}
-	//	case contains(outputs, msg.Name):
-	//
-	//	default:
-	//		p.P("# unused message ", file.Name, "_", msg.Name)
-	//	}
-	//}
+	for name := range p.outputs {
+		p.P("union ", formatSchema(name, "error"), " = ", formatSchema(name), " | ", "Error")
+	}
+
+	// get all input messages
+	for _, m := range file.Messages() {
+		if _, ok := p.inputs["."+file.GetPackage()+"."+m.GetName()]; ok {
+			for _, f := range m.GetField() {
+				if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+					p.inputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
+				}
+			}
+		}
+	}
+
+	// get all type messages
+	for _, m := range file.Messages() {
+		if _, ok := p.outputs["."+file.GetPackage()+"."+m.GetName()]; ok {
+			for _, f := range m.GetField() {
+				if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+					p.outputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
+				}
+			}
+		}
+	}
+
+	for m := range p.inputs {
+		mm := strings.Split(m, ".")
+		if len(mm) < 3 {
+			panic("unable to resolve type")
+		}
+		if file.GetPackage() == mm[1] {
+			p.inputs[m].DescriptorProto = file.GetMessage(strings.Join(mm[2:], "."))
+		}
+	}
+
+	for m := range p.outputs {
+		mm := strings.Split(m, ".")
+		if len(mm) < 3 {
+			panic("unable to resolve type")
+		}
+		if file.GetPackage() == mm[1] {
+			p.outputs[m].DescriptorProto = file.GetMessage(strings.Join(mm[2:], "."))
+		}
+	}
+
+	for name, m := range p.inputs {
+		var tail []string
+		if !m.io {
+			tail = []string{"in"}
+		}
+		p.P("input ", formatSchema(name, tail...), " {")
+		p.In()
+		for _, f := range m.GetField() {
+
+			p.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+		}
+		p.Out()
+		p.P("}")
+	}
+	for name, m := range p.outputs {
+		var tail []string
+		if !m.io {
+			tail = []string{"out"}
+		}
+		p.P("type ", formatSchema(name, tail...), " {")
+		p.In()
+		for _, f := range m.GetField() {
+			p.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+		}
+		p.Out()
+		p.P("}")
+	}
+	p.P("`")
 }
+
+func resolveRequired(field *descriptor.FieldDescriptorProto) bool {
+	if v := getValidatorType(field); v != nil {
+		switch {
+		case v.GetMsgExists():
+			return true
+		case v.GetStringNotEmpty():
+			return true
+		case v.GetRepeatedCountMin() > 0:
+			return true
+		}
+	}
+	return false
+}
+
+func formatSchema(s string, tail ...string) string {
+	ss := strings.Split(s, ".")
+	if len(ss) < 3 {
+		panic("unable to resolve type")
+	}
+	ss[2] = ToLowerFirst(ss[2])
+	return generator.CamelCase(strings.Replace(strings.Trim(strings.Join(append(ss, tail...), "."), "."), ".", "_", -1))
+}
+
+func Field(s string) string {
+	return ToLowerFirst(generator.CamelCase(s))
+}
+func Type(s string) string {
+	return strings.Title(generator.CamelCase(s))
+}
+func ToLowerFirst(s string) string {
+	return string(unicode.ToLower(rune(s[0]))) + s[1:]
+}
+
 func getMessage(file *descriptor.FileDescriptorProto, typeName string) *descriptor.DescriptorProto {
-	typeName = strings.TrimPrefix(typeName, "." + *file.Package+".")
+	typeName = strings.TrimPrefix(typeName, "."+*file.Package+".")
 	for _, msg := range file.GetMessageType() {
 		if msg.GetName() == typeName {
 			return msg
@@ -183,115 +207,53 @@ func getMethodType(rpc *descriptor.MethodDescriptorProto) gql.Type {
 	return gql.Type_MUTATION
 }
 
-func (p *plugin) isSupportedInt(field *descriptor.FieldDescriptorProto) bool {
-	switch *(field.Type) {
-	case descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_INT64:
-		return true
-	case descriptor.FieldDescriptorProto_TYPE_UINT32, descriptor.FieldDescriptorProto_TYPE_UINT64:
-		return true
-	case descriptor.FieldDescriptorProto_TYPE_SINT32, descriptor.FieldDescriptorProto_TYPE_SINT64:
-		return true
-	}
-	return false
-}
-
-func (p *plugin) isSupportedFloat(field *descriptor.FieldDescriptorProto) bool {
-	switch *(field.Type) {
-	case descriptor.FieldDescriptorProto_TYPE_FLOAT, descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return true
-	case descriptor.FieldDescriptorProto_TYPE_FIXED32, descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		return true
-	case descriptor.FieldDescriptorProto_TYPE_SFIXED32, descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		return true
-	}
-	return false
-}
-
-func (p *plugin) generateProto2Message(file *generator.FileDescriptor, message *generator.Descriptor) {
-	log.Fatal("proto2 syntax is not supported")
-}
-
-func (p *plugin) generateProto3Message(file *generator.FileDescriptor, message *generator.Descriptor) {
-	ccTypeName := generator.CamelCaseSlice(message.TypeName())
-	p.P(`func (this *`, ccTypeName, `) Validate() error {`)
-	p.In()
-	for _, field := range message.Field {
-		//fieldName := p.GetOneOfFieldName(message, field)
-		//variableName := "this." + fieldName
-		repeated := field.IsRepeated()
-		// Golang's proto3 has no concept of unset primitive fields
-		//nullable := (gogoproto.IsNullable(field) || !gogoproto.ImportsGoGoProto(file.FileDescriptorProto)) && field.IsMessage()
-		switch {
-		case p.fieldIsProto3Map(file, message, field):
-			p.P(`// graphql does not support maps`)
-			continue
-		case field.OneofIndex != nil:
-
-		case repeated:
-
-		case field.IsString():
-		case p.isSupportedInt(field):
-		case p.isSupportedFloat(field):
-		case field.IsBytes():
-		case field.IsMessage():
-		case field.IsMessage():
-
+func getValidatorType(field *descriptor.FieldDescriptorProto) *validator.FieldValidator {
+	if field.Options != nil {
+		v, err := proto.GetExtension(field.Options, validator.E_Field)
+		if err == nil {
+			return v.(*validator.FieldValidator)
 		}
 	}
-	p.P(`return nil`)
-	p.Out()
-	p.P(`}`)
+
+	return nil
 }
 
-func (p *plugin) fieldIsProto3Map(file *generator.FileDescriptor, message *generator.Descriptor, field *descriptor.FieldDescriptorProto) bool {
-	// Context from descriptor.proto
-	// Whether the message is an automatically generated map entry type for the
-	// maps field.
-	//
-	// For maps fields:
-	//     map<KeyType, ValueType> map_field = 1;
-	// The parsed descriptor looks like:
-	//     message MapFieldEntry {
-	//         option map_entry = true;
-	//         optional KeyType key = 1;
-	//         optional ValueType value = 2;
-	//     }
-	//     repeated MapFieldEntry map_field = 1;
-	//
-	// Implementations may choose not to generate the map_entry=true message, but
-	// use a native map in the target language to hold the keys and values.
-	// The reflection APIs in such implementions still need to work as
-	// if the field is a repeated message field.
-	//
-	// NOTE: Do not set the option in .proto files. Always use the maps syntax
-	// instead. The option should only be implicitly set by the proto compiler
-	// parser.
-	if field.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE || !field.IsRepeated() {
-		return false
+func (p *plugin) graphQLType(message *descriptor.DescriptorProto, field *descriptor.FieldDescriptorProto, fullName string, required bool, tail ...string) string {
+	var gqltype string
+	switch field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		gqltype = fmt.Sprint("Float")
+	case descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32, descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64, descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64:
+		gqltype = fmt.Sprint("Int")
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		gqltype = fmt.Sprint("Boolean")
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		gqltype = fmt.Sprint("String")
+	case descriptor.FieldDescriptorProto_TYPE_GROUP:
+		panic("mapping a proto group type to graphql is unimplemented")
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		panic("mapping a proto enum type to graphql is unimplemented")
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		gqltype = formatSchema(fullName, tail...)
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		//gqltype = fmt.Sprint(schemaPkgName.Use(), ".", "ByteString")
+	default:
+		panic("unknown proto field type")
 	}
-	typeName := field.GetTypeName()
-	var msg *descriptor.DescriptorProto
-	if strings.HasPrefix(typeName, ".") {
-		// Fully qualified case, look up in global map, must work or fail badly.
-		msg = p.ObjectNamed(field.GetTypeName()).(*generator.Descriptor).DescriptorProto
-	} else {
-		// Nested, relative case.
-		msg = file.GetNestedMessage(message.DescriptorProto, field.GetTypeName())
-	}
-	return msg.GetOptions().GetMapEntry()
-}
 
-//func (p *plugin) validatorWithAnyConstraint(fv *validator.FieldValidator) bool {
-//	if fv == nil {
-//		return false
-//	}
-//
-//	 Need to use reflection in order to be future-proof for new types of constraints.
-//v := reflect.ValueOf(fv)
-//for i := 0; i < v.NumField(); i++ {
-//	if v.Field(i).Interface() != nil {
-//		return true
-//	}
-//}
-//return false
-//}
+	suffix := ""
+	prefix := ""
+	if field.IsRepeated() {
+		prefix += "["
+		suffix += "]"
+	}
+	if required {
+		suffix += "!"
+	}
+
+	return prefix + gqltype + suffix
+}
