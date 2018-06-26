@@ -9,21 +9,25 @@ repeating a lot of code for translating from one transport layer to another (whi
 
 Install:
 -
+
+```sh
     go get github.com/danielvladco/go-proto-gql
     cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogql && go install
     cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogqlenum && go install
 
 Usage Examples:
 -
-The protoc compiler expects to find plugins named proto-gen-<PLUGIN_NAME> on the execution $PATH. So first:
+The protoc compiler expects to find plugins named `proto-gen-<PLUGIN_NAME>` on the execution `$PATH`. So first:
 
+```sh
     export PATH=${PATH}:${GOPATH}/bin
 
-Add --gogqlenum_out=. plugin to your protoc code generation comamnd
+Add `--gogqlenum_out` plugin to your protoc code generation comamnd
 run to generate enum marshal/unmarshal interfaces
 
-NOTE: genetate code with --gogo_out not --go_out
+NOTE: generate code with `--gogo_out` rather than `--go_out`
 
+```sh
     protoc --gogqlenum_out=. \
         --gogo_out=. \
         --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
@@ -33,16 +37,19 @@ NOTE: genetate code with --gogo_out not --go_out
     
 Import all the proto files for witch you want to generate gql handlers and use call the command like this
 
-    protoc --gogql_out=. \
-    --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
-    --proto_path=${GOPATH}/src/ \
-    --proto_path=. \
-    test.proto
 
---gogqlenum_out and --gogql_out triggers the protoc-gen-gogqlenum and protoc-gen-gogql plugins to generate
+```sh
+    protoc --gogql_out=. \
+        --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
+        --proto_path=${GOPATH}/src/ \
+        --proto_path=. \
+        test.proto
+
+`--gogqlenum_out` and `--gogql_out` triggers the `protoc-gen-gogqlenum` and `protoc-gen-gogql` plugins to generate
 required files. This is all the magic here.
 
 See examples folder.
+
 For more documentation inspect code ;)
 
 dependencies: 
@@ -66,6 +73,6 @@ BUGS:
 - generates output code to the location where you are calling command but not in the out directory as expected 
 (as workaround use this command in the path you want to generate code)
 
-###License
+## License
 
-go-proto-gql is released under the Apache 2.0 license. See the LICENSE file for details.
+`go-proto-gql` is released under the Apache 2.0 license. See the LICENSE file for details.
