@@ -11,16 +11,18 @@ Install:
 -
 
 ```sh
-    go get github.com/danielvladco/go-proto-gql
-    cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogql && go install
-    cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogqlenum && go install
+go get github.com/danielvladco/go-proto-gql
+cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogql && go install
+cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogqlenum && go install
+```
 
 Usage Examples:
 -
 The protoc compiler expects to find plugins named `proto-gen-<PLUGIN_NAME>` on the execution `$PATH`. So first:
 
 ```sh
-    export PATH=${PATH}:${GOPATH}/bin
+export PATH=${PATH}:${GOPATH}/bin
+```
 
 Add `--gogqlenum_out` plugin to your protoc code generation comamnd
 run to generate enum marshal/unmarshal interfaces
@@ -28,22 +30,23 @@ run to generate enum marshal/unmarshal interfaces
 NOTE: generate code with `--gogo_out` rather than `--go_out`
 
 ```sh
-    protoc --gogqlenum_out=. \
-        --gogo_out=. \
-        --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
-        --proto_path=${GOPATH}/src/ \
-        --proto_path=. \
-        account.proto
-    
+protoc --gogqlenum_out=. \
+    --gogo_out=. \
+    --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
+    --proto_path=${GOPATH}/src/ \
+    --proto_path=. \
+    account.proto
+```
+
 Import all the proto files for witch you want to generate gql handlers and use call the command like this
 
-
 ```sh
-    protoc --gogql_out=. \
-        --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
-        --proto_path=${GOPATH}/src/ \
-        --proto_path=. \
-        test.proto
+protoc --gogql_out=. \
+    --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
+    --proto_path=${GOPATH}/src/ \
+    --proto_path=. \
+    test.proto
+```
 
 `--gogqlenum_out` and `--gogql_out` triggers the `protoc-gen-gogqlenum` and `protoc-gen-gogql` plugins to generate
 required files. This is all the magic here.
