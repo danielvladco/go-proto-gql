@@ -1,8 +1,0 @@
-{
-  "Test": "github.com/danielvladco/go-proto-gql/gqlgen/types.Test",
-  "TestIn": "github.com/danielvladco/go-proto-gql/gqlgen/types.Test",
-  "Company": "github.com/danielvladco/go-proto-gql/gqlgen/types.Company",
-  "CompanyIn": "github.com/danielvladco/go-proto-gql/gqlgen/types.Company",
-  "Period": "github.com/danielvladco/go-proto-gql/gqlgen/types.Period",
-  "PeriodIn": "github.com/danielvladco/go-proto-gql/gqlgen/types.Period"
-}

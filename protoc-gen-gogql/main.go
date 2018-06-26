@@ -3,17 +3,18 @@ package main
 import (
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 
-	"github.com/danielvladco/go-proto-gql/plugin"
+	"github.com/danielvladco/go-proto-gql/protoc-gen-gogql/plugin"
 	"log"
+
+	gogoplugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
+	"github.com/vektah/gqlgen/codegen"
 )
 
-//go:generate protoc --go_out=../ ../*.proto
 func main() {
 	gen := generator.New()
 
@@ -26,35 +27,51 @@ func main() {
 		gen.Error(err, "parsing input proto")
 	}
 
-	useGogoImport := false
 	// Match parsing algorithm from Generator.CommandLineParameters
+	keyvalparams := make(map[string]string)
 	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {
 		kvp := strings.SplitN(parameter, "=", 2)
 		// We only care about key-value pairs where the key is "gogoimport"
-		if len(kvp) != 2 || kvp[0] != "gogoimport" {
+		lkvp := len(kvp)
+		if lkvp < 2 {
 			continue
 		}
-		useGogoImport, err = strconv.ParseBool(kvp[1])
-		if err != nil {
-			gen.Error(err, "parsing gogoimport option")
+		for i := 0; i < lkvp; i += 2 {
+			keyvalparams[kvp[i]] = kvp[i+1]
 		}
 	}
 
-	gen.CommandLineParameters(gen.Request.GetParameter())
+	p := plugin.NewPlugin()
 
+	gen.CommandLineParameters(gen.Request.GetParameter())
 	gen.WrapTypes()
 	gen.SetPackageNames()
 	gen.BuildTypeNameMap()
-	gen.GeneratePlugin(plugin.NewPlugin(useGogoImport))
-	for _, m := range gen.Response.File {
-		log.Println(m.GetName(), "Xxxx")
-	}
-	for i := 0; i < len(gen.Response.File); i++ {
-		gen.Response.File[i].Name = proto.String(strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gql.pb.go", -1))
+	gen.GeneratePlugin(p)
+
+	schema := p.GetSchema()
+	typemap := p.GetTypesMap()
+	log.Printf("%+v\n", typemap)
+	for t, m := range typemap {
+		log.Printf("%q: %q,", t, m)
 	}
 
-	// Send back the results.
-	data, err = proto.Marshal(gen.Response)
+	for i := 0; i < len(gen.Response.File); i++ {
+		err := codegen.Generate(codegen.Config{
+			SchemaStr:        schema,
+			Typemap:          typemap,
+			ModelFilename:    strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gql_models.pb.go", -1),
+			ExecFilename:     strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gql_server.pb.go", -1),
+			ExecPackageName:  keyvalparams["package"],
+			ModelPackageName: keyvalparams["modelpackage"],
+		})
+		if err != nil {
+			log.Fatal(err.Error(), "unable to generate data")
+		}
+	}
+
+	// Send back empty response. File generation is already handled by gqlgen library.
+	data, err = proto.Marshal(&gogoplugin.CodeGeneratorResponse{})
 	if err != nil {
 		gen.Error(err, "failed to marshal output proto")
 	}

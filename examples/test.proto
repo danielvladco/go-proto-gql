@@ -1,0 +1,5 @@
+syntax = "proto3";
+package server;
+
+import "github.com/danielvladco/go-proto-gql/gql.proto";
+import "github.com/danielvladco/go-proto-gql/examples/account/account.proto";
