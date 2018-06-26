@@ -55,7 +55,8 @@ See examples folder.
 
 For more documentation inspect code ;)
 
-dependencies: 
+Dependencies:
+-
 
     github.com/vektah/gqlgen 
     github.com/mwitkow/go-proto-validators
@@ -76,6 +77,6 @@ BUGS:
 - generates output code to the location where you are calling command but not in the out directory as expected 
 (as workaround use this command in the path you want to generate code)
 
-## License
+## License:
 
 `go-proto-gql` is released under the Apache 2.0 license. See the LICENSE file for details.
