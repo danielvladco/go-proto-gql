@@ -58,16 +58,16 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func (c *ResendConfirmationEmailReq_Inner_InnerEnum) UnmarshalGQL(v interface{}) error {
+func (c *Roles) UnmarshalGQL(v interface{}) error {
 	code, ok := v.(string)
 	if ok {
-		*c = ResendConfirmationEmailReq_Inner_InnerEnum(ResendConfirmationEmailReq_Inner_InnerEnum_value[code])
+		*c = Roles(Roles_value[code])
 		return nil
 	}
-	return fmt.Errorf("cannot unmarshal ResendConfirmationEmailReq_Inner_InnerEnum enum")
+	return fmt.Errorf("cannot unmarshal Roles enum")
 }
 
-func (c ResendConfirmationEmailReq_Inner_InnerEnum) MarshalGQL(w io.Writer) {
+func (c Roles) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, c.String())
 }
 
@@ -81,5 +81,18 @@ func (c *ResendConfirmationEmailReq_Data) UnmarshalGQL(v interface{}) error {
 }
 
 func (c ResendConfirmationEmailReq_Data) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, c.String())
+}
+
+func (c *ResendConfirmationEmailReq_Inner_InnerEnum) UnmarshalGQL(v interface{}) error {
+	code, ok := v.(string)
+	if ok {
+		*c = ResendConfirmationEmailReq_Inner_InnerEnum(ResendConfirmationEmailReq_Inner_InnerEnum_value[code])
+		return nil
+	}
+	return fmt.Errorf("cannot unmarshal ResendConfirmationEmailReq_Inner_InnerEnum enum")
+}
+
+func (c ResendConfirmationEmailReq_Inner_InnerEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, c.String())
 }
