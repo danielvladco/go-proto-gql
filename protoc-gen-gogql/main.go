@@ -52,6 +52,7 @@ func main() {
 	schema := p.GetSchema()
 	typemap := p.GetTypesMap()
 
+	ioutil.WriteFile("schema.graphql", []byte(schema), 0644)
 	for i := 0; i < len(gen.Response.File); i++ {
 		err := codegen.Generate(codegen.Config{
 			SchemaStr:        schema,

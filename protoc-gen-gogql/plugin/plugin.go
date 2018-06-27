@@ -11,6 +11,7 @@ import (
 	"github.com/mwitkow/go-proto-validators"
 	"log"
 	"unicode"
+	"github.com/gogo/protobuf/vanity"
 )
 
 type Message struct {
@@ -123,6 +124,7 @@ func (p *plugin) Name() string                   { return "gql" }
 func (p *plugin) Init(g *generator.Generator)    { p.Generator = g }
 
 func (p *plugin) Generate(file *generator.FileDescriptor) {
+	vanity.TurnOffGogoImport(file.FileDescriptorProto)
 	p.PluginImports = generator.NewPluginImports(p.Generator)
 
 	for _, svc := range file.Service {
@@ -157,7 +159,7 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		if _, ok := p.inputs["."+file.GetPackage()+"."+m.GetName()]; ok {
 			for _, f := range m.GetField() {
 				if f.IsMessage() {
-					p.inputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
+					p.inputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: false}
 				}
 			}
 		}
@@ -168,7 +170,7 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		if _, ok := p.outputs["."+file.GetPackage()+"."+m.GetName()]; ok {
 			for _, f := range m.GetField() {
 				if f.IsMessage() {
-					p.outputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
+					p.outputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: false}
 				}
 			}
 		}
@@ -195,24 +197,27 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	}
 
 	for name, m := range p.inputs {
-		var tail []string
+		var tail string
 		if !m.io {
-			tail = []string{"in"}
+			tail = "in"
 		}
 		fns := strings.Split(file.GetName(), "/")
 		if len(fns) < 2 {
 			return
 		}
 
-		p.typesMap[format(name, tail...)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
-		p.schema.P("input ", format(name, tail...), " {")
+		p.typesMap[format(name, tail)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
+		p.schema.P("input ", format(name, tail), " {")
 		p.schema.In()
 		for _, f := range m.GetField() {
 			if f.IsBytes() {
+				p.schema.P("")
 				p.schema.P("#", ToLowerFirst(generator.CamelCase(f.GetName())), ": Bytes # Bytes type not implemented in gql!")
+				p.schema.P("")
 				continue
 			}
-			p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+
+			p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), "in"))
 		}
 		p.schema.Out()
 		p.schema.P("}")
@@ -221,19 +226,20 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		}
 	}
 	for name, m := range p.outputs {
-		var tail []string
+		var tail string
 		if !m.io {
-			tail = []string{"out"}
+			tail = "out"
 		}
 		fns := strings.Split(file.GetName(), "/")
 		if len(fns) < 2 {
 			return
 		}
-		p.typesMap[format(name, tail...)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
-		p.schema.P("type ", format(name, tail...), " {")
+		p.typesMap[format(name, tail)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
+		log.Println(format(name, tail), "\" : \"", strings.Join(fns[:len(fns)-1], "/") + "." + goType(name))
+		p.schema.P("type ", format(name, tail), " {")
 		p.schema.In()
 		for _, f := range m.GetField() {
-			p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+			p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), "out"))
 		}
 		p.schema.Out()
 		p.schema.P("}")
@@ -374,7 +380,9 @@ func (p *plugin) graphQLType(message *descriptor.DescriptorProto, field *descrip
 		gqltype = fmt.Sprint("String")
 	case descriptor.FieldDescriptorProto_TYPE_GROUP:
 		panic("mapping a proto group type to graphql is unimplemented")
-	case descriptor.FieldDescriptorProto_TYPE_ENUM, descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		gqltype = format(field.GetTypeName())
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		gqltype = format(field.GetTypeName(), tail...)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		gqltype = fmt.Sprint("Bytes")
