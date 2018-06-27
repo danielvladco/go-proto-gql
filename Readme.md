@@ -12,8 +12,8 @@ Install:
 
 ```sh
 go get github.com/danielvladco/go-proto-gql
-cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogql && go install
-cd ${GOPATH}github.com/danielvladco/go-proto-gql/protoc-gen-gogqlenum && go install
+cd ${GOPATH}/src/github.com/danielvladco/go-proto-gql/protoc-gen-gogql && go install
+cd ${GOPATH}/src/github.com/danielvladco/go-proto-gql/protoc-gen-gogqlenum && go install
 ```
 
 Usage Examples:
