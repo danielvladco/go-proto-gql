@@ -31,7 +31,6 @@ type plugin struct {
 	generator.PluginImports
 	inputs   map[string]*Message
 	outputs  map[string]*Message
-	enums    map[string]*descriptor.EnumDescriptorProto
 	imports  map[string]string
 	typesMap map[string]string
 	types    []*descriptor.DescriptorProto
@@ -71,7 +70,6 @@ schema {
 	return &plugin{
 		outputs:  make(map[string]*Message),
 		inputs:   make(map[string]*Message),
-		enums:    make(map[string]*descriptor.EnumDescriptorProto),
 		typesMap: make(map[string]string),
 		schema:   schema,
 	}
@@ -158,11 +156,8 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	for _, m := range file.Messages() {
 		if _, ok := p.inputs["."+file.GetPackage()+"."+m.GetName()]; ok {
 			for _, f := range m.GetField() {
-				if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+				if f.IsMessage() {
 					p.inputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
-				}
-				if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-					p.enums[f.GetTypeName()] = &descriptor.EnumDescriptorProto{}
 				}
 			}
 		}
@@ -172,27 +167,8 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	for _, m := range file.Messages() {
 		if _, ok := p.outputs["."+file.GetPackage()+"."+m.GetName()]; ok {
 			for _, f := range m.GetField() {
-				if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+				if f.IsMessage() {
 					p.outputs[f.GetTypeName()] = &Message{DescriptorProto: &descriptor.DescriptorProto{}, io: true}
-				}
-				if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-					p.enums[f.GetTypeName()] = &descriptor.EnumDescriptorProto{}
-				}
-			}
-		}
-	}
-
-	for e := range p.enums {
-		mm := strings.Split(e, ".")
-		if len(mm) < 3 {
-			panic("unable to resolve type")
-		}
-
-		if file.GetPackage() == mm[1] {
-			msg := file.GetMessage(strings.Join(mm[2:len(mm)-1], "."))
-			for _, tt := range msg.GetEnumType() {
-				if tt.GetName() == mm[len(mm)-1] {
-					p.enums[e] = tt
 				}
 			}
 		}
@@ -227,16 +203,20 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		if len(fns) < 2 {
 			return
 		}
-		if len(m.GetField()) > 0 {
-			p.typesMap[format(name, tail...)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
-			p.schema.P("input ", format(name, tail...), " {")
-			p.schema.In()
-			for _, f := range m.GetField() {
-				p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+
+		p.typesMap[format(name, tail...)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
+		p.schema.P("input ", format(name, tail...), " {")
+		p.schema.In()
+		for _, f := range m.GetField() {
+			if f.IsBytes() {
+				p.schema.P("#", ToLowerFirst(generator.CamelCase(f.GetName())), ": Bytes # Bytes type not implemented in gql!")
+				continue
 			}
-			p.schema.Out()
-			p.schema.P("}")
-		} else {
+			p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+		}
+		p.schema.Out()
+		p.schema.P("}")
+		if len(m.GetField()) == 0 {
 			p.HideInputOutput(name)
 		}
 	}
@@ -249,30 +229,30 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		if len(fns) < 2 {
 			return
 		}
-		if len(m.GetField()) > 0 {
-			p.typesMap[format(name, tail...)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
-			p.schema.P("type ", format(name, tail...), " {")
-			p.schema.In()
-			for _, f := range m.GetField() {
-				p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
-			}
-			p.schema.Out()
-			p.schema.P("}")
-		} else {
+		p.typesMap[format(name, tail...)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
+		p.schema.P("type ", format(name, tail...), " {")
+		p.schema.In()
+		for _, f := range m.GetField() {
+			p.schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(m.DescriptorProto, f, name, resolveRequired(f), tail...))
+		}
+		p.schema.Out()
+		p.schema.P("}")
+		if len(m.GetField()) == 0 {
 			p.HideInputOutput(name)
 		}
 	}
 
-	for name, e := range p.enums {
+	for _, e := range file.Enums() {
 		fns := strings.Split(file.GetName(), "/")
+		pkgName := e.File().GetPackage()
 		if len(fns) < 2 {
 			return
 		}
-		if len(e.GetValue()) == 0 {
-			panic("enum with 0 values")
-		}
-		p.typesMap[format(name)] = strings.Join(fns[:len(fns)-1], "/") + "." + goType(name)
-		p.schema.P("enum ", format(name), " {")
+
+		oldGQLName := strings.Join(append([]string{".", pkgName}, e.TypeName()...), ".")
+
+		p.typesMap[format(oldGQLName)] = strings.Join(fns[:len(fns)-1], "/") + "." + generator.CamelCaseSlice(e.TypeName())
+		p.schema.P("enum ", format(oldGQLName), " {")
 		p.schema.In()
 		for _, v := range e.GetValue() {
 			p.schema.P(v.GetName())
@@ -397,7 +377,7 @@ func (p *plugin) graphQLType(message *descriptor.DescriptorProto, field *descrip
 	case descriptor.FieldDescriptorProto_TYPE_ENUM, descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		gqltype = format(field.GetTypeName(), tail...)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		//gqltype = fmt.Sprint(schemaPkgName.Use(), ".", "ByteString")
+		gqltype = fmt.Sprint("Bytes")
 	default:
 		panic("unknown proto field type")
 	}

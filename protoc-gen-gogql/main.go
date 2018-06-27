@@ -51,10 +51,6 @@ func main() {
 
 	schema := p.GetSchema()
 	typemap := p.GetTypesMap()
-	log.Printf("%+v\n", typemap)
-	for t, m := range typemap {
-		log.Printf("%q: %q,", t, m)
-	}
 
 	for i := 0; i < len(gen.Response.File); i++ {
 		err := codegen.Generate(codegen.Config{
