@@ -78,7 +78,7 @@ func (c *`, enumType, `) UnmarshalGQL(v interface{}) error {
 }
 
 func (c `, enumType, `) MarshalGQL(w `, p.ioPkg.Use(), `.Writer) {
-	`, p.fmtPkg.Use(), `.Fprint(w, c.String())
+	`, p.fmtPkg.Use(), `.Fprintf(w, "%q", c.String())
 }
 `)
 			}
