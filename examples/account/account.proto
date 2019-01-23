@@ -1,8 +1,9 @@
 syntax = "proto3";
 package account;
-
-import "github.com/danielvladco/go-proto-gql/gql.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
+option go_package = "github.com/danielvladco/go-proto-gql/examples/account;account";
+import "gql.proto";
+import "examples/datatypes/datatypes.proto";
+import "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto";
 
 service Service {
     rpc SignIn (SignInReq) returns (SignInRes);
@@ -16,21 +17,19 @@ service Service {
     rpc ChangePassword (ChangePasswordReq) returns (ChangePasswordRes);
     rpc RequestChangeEmail (RequestChangeEmailReq) returns (RequestChangeEmailRes);
     rpc ChangeEmail (ChangeEmailReq) returns (ChangeEmailRes);
-    rpc RequestDeleteAccount (RequestDeleteAccountReq) returns (RequestDeleteAccountRes) {
-        option (gql.type) = SUBSCRIPTION;
-    };
+    rpc RequestDeleteAccount (RequestDeleteAccountReq) returns (RequestDeleteAccountRes);
     rpc DeleteAccount (DeleteAccountReq) returns (DeleteAccountRes) {
-        option (gql.type) = QUERY;
+        option (gql.rpc_type) = QUERY;
     }
 }
 
 message SignInReq {
-    string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}];
+    string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}, (gql.field) = {dirs: "@req  "}];
     string password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
 }
 
 message GetCurrentAccountReq {
-    
+
 }
 message SignUpWithEmailReq {
     string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}];
@@ -43,6 +42,9 @@ message ResendConfirmationEmailReq {
         GGG = 2;
     }
     message Inner {
+        string field = 1;
+        Acc acc = 2;
+        datatypes.Date date = 3;
         enum InnerEnum {
             SSS = 0;
             DDD = 1;
@@ -51,9 +53,11 @@ message ResendConfirmationEmailReq {
     Inner.InnerEnum inner = 4;
     Data data = 2;
     string account_id = 1 [(validator.field) = {string_not_empty: true}];
+    // test if inner message works
+    Inner inner_msg = 9;
 }
 message SignOutReq {
-    
+
 }
 message ConfirmEmailReq {
     string token = 1 [(validator.field) = {string_not_empty: true}];
@@ -79,53 +83,53 @@ message ChangePasswordReq {
     string new_password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
 }
 message RequestDeleteAccountReq {
-    
+
 }
 message DeleteAccountReq {
     string token = 1;
 }
 // response
 message SignInRes {
-    Account account = 1;
+    Account account = 1 [(gql.field) = {params: "dd: SS" dirs: "@dir"}];
 }
 message SignUpWithEmailRes {
     Account account = 1;
 }
 message ConfirmEmailRes {
-    
+
 }
 message GetCurrentAccountRes {
     repeated Account account = 1;
 }
 message CheckResetPasswordTokenRes {
-    
+
 }
 message SignOutRes {
-    
+
 }
 message ResendConfirmationEmailRes {
-    
+
 }
 message ForgotPasswordRes {
-    
+
 }
 message ResetPasswordRes {
-    
+
 }
 message ChangePasswordRes {
-    
+
 }
 message RequestChangeEmailRes {
-    
+
 }
 message ChangeEmailRes {
     Account account = 1;
 }
 message RequestDeleteAccountRes {
-    
+
 }
 message DeleteAccountRes {
-    
+
 }
 
 //common
@@ -134,30 +138,14 @@ message Account {
     string email = 2;
     bool email_confirmed = 3;
 }
-
-// events
-message SignedUpWithEmail {
-    string email = 1;
-    bytes password = 4;
+message Acc {
+    string account_id = 1;
 }
-message EmailConfirmed {
-    
+message Unused {
+    string s = 1;
 }
-message PasswordReset {
-    bytes password = 1;
-}
-message PasswordChanged {
-    bytes password = 1;
-}
-message EmailChanged {
-    string email = 1;
-}
-message AccountDeleted {
-    
-}
-
 enum Roles {
-     DDD = 0;
-     NNN = 1;
-     GGG = 2;
+    DDD = 0;
+    NNN = 1;
+    GGG = 2;
 }

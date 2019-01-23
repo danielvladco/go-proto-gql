@@ -1,0 +1,56 @@
+syntax = "proto3";
+package account;
+option go_package = "github.com/danielvladco/go-proto-gql/examples/account;account";
+
+import "gql.proto";
+import "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto";
+
+service AuthSvc {
+    option (gql.svc_type) = QUERY;
+    rpc SignIn (SignInReq1) returns (SignInRes1);
+    rpc GetCurrentAccount (GetCurrentAccountReq1) returns (GetCurrentAccountRes1);
+    rpc SignUpWithEmail (SignUpWithEmailReq1) returns (SignUpWithEmailRes1);
+    rpc ResendConfirmationEmail (ResendConfirmationEmailReq1) returns (ResendConfirmationEmailRes1);
+}
+
+message SignInReq1 {
+    string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}];
+    string password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
+}
+
+message GetCurrentAccountReq1 {
+
+}
+message SignUpWithEmailReq1 {
+    string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}];
+    string password = 4 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
+}
+message ResendConfirmationEmailReq1 {
+    string account_id = 1 [(validator.field) = {string_not_empty: true}];
+}
+
+message SignInRes1 {
+    Account1 account = 1;
+}
+message SignUpWithEmailRes1 {
+    Account1 account = 1;
+}
+message GetCurrentAccountRes1 {
+    repeated Account1 account = 1;
+}
+message ResendConfirmationEmailRes1 {
+    Account1 acc = 1;
+}
+
+//common
+message Account1 {
+    string account_id = 1;
+    string email = 2;
+    bool email_confirmed = 3;
+}
+
+enum Roles1 {
+    DDD1 = 0;
+    NNN1 = 1;
+    GGG1 = 2;
+}

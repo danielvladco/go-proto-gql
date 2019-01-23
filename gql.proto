@@ -1,16 +1,31 @@
 syntax = "proto2";
 package gql;
 
+option go_package = "github.com/danielvladco/go-proto-gql;gql";
+
 import "google/protobuf/descriptor.proto";
 
-option go_package = "gql";
+// TODO: Email protobuf-global-extension-registry@google.com to get an extension ID.
 
 extend google.protobuf.MethodOptions {
-    optional Type type = 65080;
+    optional Type rpc_type = 65030;
+}
+
+extend google.protobuf.ServiceOptions {
+    optional Type svc_type = 65030;
+}
+
+extend google.protobuf.FieldOptions {
+    optional Field field = 65030;
+}
+
+message Field {
+    optional string params = 1;
+    optional string dirs = 2;
 }
 
 enum Type {
-    MUTATION = 0;
-    QUERY = 1;
-    SUBSCRIPTION = 2;
+    DEFAULT = 0;
+    MUTATION = 1;
+    QUERY = 2;
 }

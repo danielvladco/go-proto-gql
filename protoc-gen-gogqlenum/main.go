@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -26,11 +27,25 @@ func main() {
 		gen.Fail("no files to generate")
 	}
 
+	useGogoImport := false
+	// Match parsing algorithm from Generator.CommandLineParameters
+	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {
+		kvp := strings.SplitN(parameter, "=", 2)
+		// We only care about key-value pairs where the key is "gogoimport"
+		if len(kvp) != 2 || kvp[0] != "gogoimport" {
+			continue
+		}
+		useGogoImport, err = strconv.ParseBool(kvp[1])
+		if err != nil {
+			gen.Error(err, "parsing gogoimport option")
+		}
+	}
+
 	gen.CommandLineParameters(gen.Request.GetParameter())
 	gen.WrapTypes()
 	gen.SetPackageNames()
 	gen.BuildTypeNameMap()
-	gen.GeneratePlugin(&plugin{enums: make(map[string]struct{}), messages: make(map[string]struct{})})
+	gen.GeneratePlugin(&plugin{useGogoImport: useGogoImport, enums: make(map[string]struct{}), messages: make(map[string]struct{})})
 
 	for i := 0; i < len(gen.Response.File); i++ {
 		gen.Response.File[i].Name = proto.String(strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gql_enum.pb.go", -1))
@@ -54,12 +69,16 @@ type plugin struct {
 	fmtPkg   generator.Single
 	enums    map[string]struct{}
 	messages map[string]struct{}
+
+	useGogoImport bool
 }
 
 func (p *plugin) Name() string                { return "gqlenum" }
 func (p *plugin) Init(g *generator.Generator) { p.Generator = g }
 func (p *plugin) Generate(file *generator.FileDescriptor) {
-	vanity.TurnOffGogoImport(file.FileDescriptorProto)
+	if !p.useGogoImport {
+		vanity.TurnOffGogoImport(file.FileDescriptorProto)
+	}
 	p.PluginImports = generator.NewPluginImports(p.Generator)
 	p.fmtPkg = p.NewImport("fmt")
 	p.ioPkg = p.NewImport("io")
