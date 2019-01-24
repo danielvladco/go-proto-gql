@@ -8,7 +8,7 @@ import io "io"
 import proto "github.com/golang/protobuf/proto"
 import math "math"
 import _ "github.com/danielvladco/go-proto-gql"
-import _ "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007"
+import _ "github.com/mwitkow/go-proto-validators"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

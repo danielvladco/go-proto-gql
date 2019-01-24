@@ -1,0 +1,14 @@
+schema {
+    mutation: Mutation
+    query: Query
+    subscription: Subscription
+}
+type Subscription {
+    test: Boolean!
+}
+type Query {
+    test: Boolean!
+}
+type Mutation {
+    test: Boolean!
+}

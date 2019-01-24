@@ -7,7 +7,12 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import _ "github.com/danielvladco/go-proto-gql"
-import _ "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007"
+import _ "github.com/mwitkow/go-proto-validators"
+
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -424,6 +429,177 @@ func init() {
 	proto.RegisterType((*ResendConfirmationEmailRes1)(nil), "account.ResendConfirmationEmailRes1")
 	proto.RegisterType((*Account1)(nil), "account.Account1")
 	proto.RegisterEnum("account.Roles1", Roles1_name, Roles1_value)
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// AuthSvcClient is the client API for AuthSvc service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type AuthSvcClient interface {
+	SignIn(ctx context.Context, in *SignInReq1, opts ...grpc.CallOption) (*SignInRes1, error)
+	GetCurrentAccount(ctx context.Context, in *GetCurrentAccountReq1, opts ...grpc.CallOption) (*GetCurrentAccountRes1, error)
+	SignUpWithEmail(ctx context.Context, in *SignUpWithEmailReq1, opts ...grpc.CallOption) (*SignUpWithEmailRes1, error)
+	ResendConfirmationEmail(ctx context.Context, in *ResendConfirmationEmailReq1, opts ...grpc.CallOption) (*ResendConfirmationEmailRes1, error)
+}
+
+type authSvcClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewAuthSvcClient(cc *grpc.ClientConn) AuthSvcClient {
+	return &authSvcClient{cc}
+}
+
+func (c *authSvcClient) SignIn(ctx context.Context, in *SignInReq1, opts ...grpc.CallOption) (*SignInRes1, error) {
+	out := new(SignInRes1)
+	err := c.cc.Invoke(ctx, "/account.AuthSvc/SignIn", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authSvcClient) GetCurrentAccount(ctx context.Context, in *GetCurrentAccountReq1, opts ...grpc.CallOption) (*GetCurrentAccountRes1, error) {
+	out := new(GetCurrentAccountRes1)
+	err := c.cc.Invoke(ctx, "/account.AuthSvc/GetCurrentAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authSvcClient) SignUpWithEmail(ctx context.Context, in *SignUpWithEmailReq1, opts ...grpc.CallOption) (*SignUpWithEmailRes1, error) {
+	out := new(SignUpWithEmailRes1)
+	err := c.cc.Invoke(ctx, "/account.AuthSvc/SignUpWithEmail", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authSvcClient) ResendConfirmationEmail(ctx context.Context, in *ResendConfirmationEmailReq1, opts ...grpc.CallOption) (*ResendConfirmationEmailRes1, error) {
+	out := new(ResendConfirmationEmailRes1)
+	err := c.cc.Invoke(ctx, "/account.AuthSvc/ResendConfirmationEmail", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AuthSvcServer is the server API for AuthSvc service.
+type AuthSvcServer interface {
+	SignIn(context.Context, *SignInReq1) (*SignInRes1, error)
+	GetCurrentAccount(context.Context, *GetCurrentAccountReq1) (*GetCurrentAccountRes1, error)
+	SignUpWithEmail(context.Context, *SignUpWithEmailReq1) (*SignUpWithEmailRes1, error)
+	ResendConfirmationEmail(context.Context, *ResendConfirmationEmailReq1) (*ResendConfirmationEmailRes1, error)
+}
+
+func RegisterAuthSvcServer(s *grpc.Server, srv AuthSvcServer) {
+	s.RegisterService(&_AuthSvc_serviceDesc, srv)
+}
+
+func _AuthSvc_SignIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignInReq1)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthSvcServer).SignIn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/account.AuthSvc/SignIn",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthSvcServer).SignIn(ctx, req.(*SignInReq1))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthSvc_GetCurrentAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentAccountReq1)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthSvcServer).GetCurrentAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/account.AuthSvc/GetCurrentAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthSvcServer).GetCurrentAccount(ctx, req.(*GetCurrentAccountReq1))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthSvc_SignUpWithEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignUpWithEmailReq1)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthSvcServer).SignUpWithEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/account.AuthSvc/SignUpWithEmail",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthSvcServer).SignUpWithEmail(ctx, req.(*SignUpWithEmailReq1))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthSvc_ResendConfirmationEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendConfirmationEmailReq1)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthSvcServer).ResendConfirmationEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/account.AuthSvc/ResendConfirmationEmail",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthSvcServer).ResendConfirmationEmail(ctx, req.(*ResendConfirmationEmailReq1))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _AuthSvc_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "account.AuthSvc",
+	HandlerType: (*AuthSvcServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SignIn",
+			Handler:    _AuthSvc_SignIn_Handler,
+		},
+		{
+			MethodName: "GetCurrentAccount",
+			Handler:    _AuthSvc_GetCurrentAccount_Handler,
+		},
+		{
+			MethodName: "SignUpWithEmail",
+			Handler:    _AuthSvc_SignUpWithEmail_Handler,
+		},
+		{
+			MethodName: "ResendConfirmationEmail",
+			Handler:    _AuthSvc_ResendConfirmationEmail_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "examples/account/auth.proto",
 }
 
 func init() { proto.RegisterFile("examples/account/auth.proto", fileDescriptor_auth_e0806feaec53e8ef) }

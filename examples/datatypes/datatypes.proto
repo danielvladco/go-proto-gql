@@ -1,8 +1,0 @@
-syntax = "proto3";
-package datatypes;
-
-option go_package = "github.com/danielvladco/go-proto-gql/examples/account/datatypes;datatypes";
-
-message Date {
-    string date = 1;
-}

@@ -2,7 +2,7 @@ syntax = "proto3";
 package account;
 option go_package = "github.com/danielvladco/go-proto-gql/examples/account;account";
 import "gql.proto";
-import "examples/datatypes/datatypes.proto";
+
 import "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto";
 
 service Service {
@@ -24,7 +24,7 @@ service Service {
 }
 
 message SignInReq {
-    string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}, (gql.field) = {dirs: "@req  "}];
+    string email = 1 [(validator.field) = {string_not_empty: true regex: "^[a-zA-Z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$"}];
     string password = 2 [(validator.field) = {string_not_empty: true length_gt: 5 length_lt: 100}];
 }
 
@@ -44,7 +44,6 @@ message ResendConfirmationEmailReq {
     message Inner {
         string field = 1;
         Acc acc = 2;
-        datatypes.Date date = 3;
         enum InnerEnum {
             SSS = 0;
             DDD = 1;
@@ -90,7 +89,7 @@ message DeleteAccountReq {
 }
 // response
 message SignInRes {
-    Account account = 1 [(gql.field) = {params: "dd: SS" dirs: "@dir"}];
+    Account account = 1;
 }
 message SignUpWithEmailRes {
     Account account = 1;
