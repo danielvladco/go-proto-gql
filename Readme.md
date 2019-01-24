@@ -33,11 +33,9 @@ NOTE: this script will generate graphql files with extension .graphqls
 rather than go code which means it can be further used for any other language or framework
 Example: 
 ```sh
-protoc --gogql_out=. \
-    --proto_path=${GOPATH}/pkg/mod/github.com/gogo/protobuf/protobuf \
-    --proto_path=${GOPATH}/pkg/mod/ \
-    --proto_path=. \
-    test.proto
+protoc --gogql_out=paths=source_relative,gqlgen=./examples/gqlgen.yml:. \
+	-I=${GOPATH}/pkg/mod/ -I=. -I=./examples/account/ \
+	./examples/account/*.proto
 ```
 
 If you still want to generate go source code instead of graphql then use 
@@ -52,12 +50,10 @@ NOTE: to generate with gogo import add `gogoimport=true` as a parameter
 
 Example:
 ```sh
-protoc --gogqlenum_out=gogoimport=true. \
-    --gogo_out=. \
-    -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
-    -I=${GOPATH}/src/ \
-    -I=. \
-    account.proto
+protoc --go_out=Mgithub.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto=github.com/mwitkow/go-proto-validators,plugins=grpc,paths=source_relative:. \
+	--gogqlenum_out=Mgithub.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto=github.com/mwitkow/go-proto-validators,paths=source_relative,gogoimport=false:. \
+	-I=${GOPATH}/pkg/mod/ -I=. -I=./examples/account/ \
+	./examples/account/*.proto
 ``` 
 
 See examples folder.
