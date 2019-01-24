@@ -449,8 +449,8 @@ func (p *plugin) graphQLType(field *descriptor.FieldDescriptorProto, inputContex
 	case descriptor.FieldDescriptorProto_TYPE_GROUP:
 		p.Warn("mapping a proto group type to graphql is unimplemented")
 		//TODO: maybe implement maps as scalars with name containing key type and value type
-		// e. i. map[string]string will be represented as: Map_String_String # map with key: "String" and value: "String"
-		// e. i. map<AccountID, Account> will be represented as: scalar Map_AccountID_Account # map with key: "AccountID" and value: "Account"
+		// e. i. `map<string, string>` will be represented as: `scalar Map_String_String # map with key: "String" and value: "String"`
+		// e. i. `map<AccountID, Account>` will be represented as: `scalar Map_AccountID_Account # map with key: "AccountID" and value: "Account"`
 		gqltype = fmt.Sprint("Map")
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		gqltype = p.gqlModelNames[p.enums[field.GetTypeName()]]
