@@ -1,0 +1,54 @@
+syntax = "proto3";
+package pb;
+option go_package = "github.com/danielvladco/go-proto-gql/examples/pb;pb";
+
+import "gql.proto";
+import "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto";
+
+service Service {
+    rpc Mutate1 (Data) returns (Data); // must be a mutation
+    rpc Mutate2 (Data) returns (Data); // must be a mutation
+    rpc Query1 (Data) returns (Data) {
+        option (gql.rpc_type) = QUERY;
+    } // must be a query
+
+    rpc Publish (stream Data) returns (Data); // must be a mutation
+    rpc Subscribe (Data) returns (stream Data); // must be a subscription
+    rpc PubSub1 (stream Data) returns (stream Data); // must be a mutation and a subscription
+
+    rpc InvalidSubscribe1 (stream Data) returns (Data) {
+        option (gql.rpc_type) = QUERY;
+    }; // must ignore
+    rpc InvalidSubscribe2 (Data) returns (stream Data) {
+        option (gql.rpc_type) = MUTATION;
+    }; // must ignore
+    rpc InvalidSubscribe3 (stream Data) returns (stream Data) {
+        option (gql.rpc_type) = QUERY;
+    }; // must ignore
+    rpc PubSub2 (stream Data) returns (stream Data) {
+        option (gql.rpc_type) = DEFAULT;
+    }; // must ignore
+}
+
+service Query {
+    option (gql.svc_type) = QUERY;
+    rpc Query1 (Data) returns (Data); // must be a query
+    rpc Query2 (Data) returns (Data); // must be a query
+    rpc Mutate1 (Data) returns (Data) {
+        option (gql.rpc_type) = MUTATION;
+    } // must be a mutation
+    rpc Subscribe (Data) returns (stream Data); // must be a subscription
+}
+
+message Data {
+    string string = 1 [(validator.field) = {string_not_empty: true}]; // must be required
+    Foo2 foo = 2 [(validator.field) = {msg_exists: true}]; // must be required
+    repeated float float = 3 [(validator.field) = {repeated_count_min: 1}]; // must be required because its greater than 0
+    string string2 = 4; // simple
+    Foo2 foo2 = 5; // simple
+    repeated float float2 = 6; // simple
+}
+
+message Foo2 {
+    string param1 = 1;
+}

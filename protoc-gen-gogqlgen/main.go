@@ -48,7 +48,7 @@ func main() {
 	gen.GeneratePlugin(&plugin{useGogoImport: useGogoImport, enums: make(map[string]struct{}), messages: make(map[string]struct{})})
 
 	for i := 0; i < len(gen.Response.File); i++ {
-		gen.Response.File[i].Name = proto.String(strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gql_enum.pb.go", -1))
+		gen.Response.File[i].Name = proto.String(strings.Replace(*gen.Response.File[i].Name, ".pb.go", ".gqlgen.pb.go", -1))
 	}
 
 	// Send back the results.
