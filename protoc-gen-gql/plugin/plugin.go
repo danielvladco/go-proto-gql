@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 
 	"strings"
@@ -57,6 +58,25 @@ type Type struct {
 	*descriptor.DescriptorProto
 	*descriptor.EnumDescriptorProto
 	ModelDescriptor
+}
+
+type TypeMapList []*TypeMapEntry
+
+func (t TypeMapList) Len() int           { return len(t) }
+func (t TypeMapList) Less(i, j int) bool { return t[i].Key < t[j].Key }
+func (t TypeMapList) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+
+func typeMap2List(t map[string]*Type) (m TypeMapList) {
+	for key, val := range t {
+		m = append(m, &TypeMapEntry{Key: key, Value: val})
+	}
+	sort.Sort(m)
+	return
+}
+
+type TypeMapEntry struct {
+	Key   string
+	Value *Type
 }
 
 func NewPlugin() *plugin {
@@ -487,14 +507,19 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 	p.PrintComments(2)
 	// TODO: add comments from proto to gql for documentation purposes to all elements. Currently are supported only a few
 
+	if len(p.oneofs) > 0 {
+		p.Schema.P("directive @oneof(name: String) on FIELD_DEFINITION\n")
+	}
 	// scalars
-	for _, scalar := range p.scalars {
+	for _, entry := range typeMap2List(p.scalars) {
+		scalar := entry.Value
 		if !scalar.BuiltIn {
 			p.Schema.P("scalar ", p.gqlModelNames[scalar], "\n")
 		}
 	}
 	// maps
-	for _, m := range p.maps {
+	for _, entry := range typeMap2List(p.maps) {
+		m := entry.Value
 		key, val := m.GetMapFields()
 
 		messagesIn := make(map[string]*Type)
@@ -508,7 +533,8 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 	}
 
 	// render gql inputs
-	for protoTypeName, m := range p.inputs {
+	for _, entry := range typeMap2List(p.inputs) {
+		protoTypeName, m := entry.Key, entry.Value
 		if p.IsEmpty(m) || p.IsAny(protoTypeName) {
 			continue
 		}
@@ -529,7 +555,7 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 			}
 			oneof := ""
 			if f.OneofIndex != nil {
-				oneof = fmt.Sprintf("@Oneof(name: %q)", p.gqlModelNames[p.oneofs[p.oneofsRef[OneofRef{parent: m, index: f.GetOneofIndex()}]]])
+				oneof = fmt.Sprintf("@oneof(name: %q)", p.gqlModelNames[p.oneofs[p.oneofsRef[OneofRef{parent: m, index: f.GetOneofIndex()}]]])
 			}
 			p.Schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(f, p.inputs), " ", oneof, " ", opts.GetDirs())
 		}
@@ -538,7 +564,8 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 	}
 
 	// render gql types
-	for protoTypeName, m := range p.types {
+	for _, entry := range typeMap2List(p.types) {
+		protoTypeName, m := entry.Key, entry.Value
 		if p.IsEmpty(m) || p.IsAny(protoTypeName) {
 			continue
 		}
@@ -576,7 +603,8 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 		p.Schema.P("}\n")
 	}
 
-	for _, oneof := range p.oneofs {
+	for _, entry := range typeMap2List(p.oneofs) {
+		oneof := entry.Value
 		p.Schema.P("union ", p.gqlModelNames[oneof], " = ", strings.Join(func() (ss []string) {
 			for typeName := range oneof.OneofTypes {
 				ss = append(ss, p.gqlModelNames[p.types[typeName]])
