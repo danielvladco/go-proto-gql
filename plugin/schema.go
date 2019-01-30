@@ -3,39 +3,27 @@ package plugin
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 )
 
-type Schema struct {
-	indent  string
-	index   int
-	schemas []*bytes.Buffer
-}
-
-func NewBytes() *Schema {
-	return &Schema{}
-}
-
-func (s *Schema) GetSchemaByIndex(index int) *bytes.Buffer {
-	return s.schemas[index]
-}
-
-func (s *Schema) NextSchema() {
-	s.indent = ""
-	s.schemas = append(s.schemas, new(bytes.Buffer))
-	s.index = len(s.schemas) - 1
+type schema struct {
+	indent string
+	buffer *bytes.Buffer
+	*generator.Generator
 }
 
 // In Indents the output one tab stop.
-func (s *Schema) In() { s.indent += "\t" }
+func (s *schema) In() { s.indent += "\t" }
 
 // Out unindents the output one tab stop.
-func (s *Schema) Out() {
+func (s *schema) Out() {
 	if len(s.indent) > 0 {
 		s.indent = s.indent[1:]
 	}
 }
-func (s *Schema) P(str ...interface{}) {
-	g := s.schemas[s.index]
+func (s *schema) P(str ...interface{}) {
+	g := s.buffer
 	_, _ = fmt.Fprint(g, s.indent)
 	for _, v := range str {
 		switch s := v.(type) {

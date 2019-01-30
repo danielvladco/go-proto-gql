@@ -8,80 +8,19 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"sort"
 	"strconv"
-
 	"strings"
-	"unicode"
 
 	"github.com/danielvladco/go-proto-gql"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	golangproto "github.com/golang/protobuf/proto"
-	"github.com/mwitkow/go-proto-validators"
 )
 
-type ModelDescriptor struct {
-	BuiltIn     bool
-	PackageDir  string
-	TypeName    string
-	UsedAsInput bool
-	Index       int
-	OneofTypes  map[string]struct{}
-
-	packageName     string
-	originalPackage string
-}
-
-type Method struct {
-	Name         string
-	InputType    string
-	OutputType   string
-	Phony        bool
-	ServiceIndex int
-	Index        int
-}
-
-type Methods []*Method
-
-func (ms Methods) NameExists(name string) bool {
-	for _, m := range ms {
-		if m.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-type Type struct {
-	*descriptor.DescriptorProto
-	*descriptor.EnumDescriptorProto
-	ModelDescriptor
-}
-
-type TypeMapList []*TypeMapEntry
-
-func (t TypeMapList) Len() int           { return len(t) }
-func (t TypeMapList) Less(i, j int) bool { return t[i].Key < t[j].Key }
-func (t TypeMapList) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
-
-func typeMap2List(t map[string]*Type) (m TypeMapList) {
-	for key, val := range t {
-		m = append(m, &TypeMapEntry{Key: key, Value: val})
-	}
-	sort.Sort(m)
-	return
-}
-
-type TypeMapEntry struct {
-	Key   string
-	Value *Type
-}
-
-func NewPlugin() *plugin {
-	return &plugin{
-		Schema:    NewBytes(),
+func NewPlugin() *Plugin {
+	return &Plugin{
+		fileIndex: -1,
 		types:     make(map[string]*Type),
 		inputs:    make(map[string]*Type),
 		enums:     make(map[string]*Type),
@@ -101,20 +40,12 @@ func NewPlugin() *plugin {
 			"Boolean":      {ModelDescriptor: ModelDescriptor{BuiltIn: true}},
 			"ID":           {ModelDescriptor: ModelDescriptor{BuiltIn: true}},
 		},
-		gqlModelNames: make(map[*Type]string),
-		logger:        log.New(os.Stderr, "protoc-gen-gogql: ", log.Lshortfile),
+		logger: log.New(os.Stderr, "protoc-gen-gogql: ", log.Lshortfile),
 	}
 }
 
-type OneofRef struct {
-	parent *Type
-	index  int32
-}
-
-type plugin struct {
-	*Schema
+type Plugin struct {
 	*generator.Generator
-	generator.PluginImports
 
 	// info for the current schema
 	mutations     Methods
@@ -127,12 +58,27 @@ type plugin struct {
 	maps          map[string]*Type
 	oneofs        map[string]*Type
 	oneofsRef     map[OneofRef]string // map containing reference to gql oneof names, we need this since oneofs cant fe found by name
-	gqlModelNames map[*Type]string    // map containing reference to gql type names
+
+	fileIndex     int
+	schemas       []*schema
+	gqlModelNames []map[*Type]string // map containing reference to gql type names
 
 	logger *log.Logger
 }
 
-func (p *plugin) IsAny(typeName string) (ok bool) {
+func (p *Plugin) GetOneof(ref OneofRef) *Type              { return p.oneofs[p.oneofsRef[ref]] }
+func (p *Plugin) Oneofs() map[string]*Type                 { return p.oneofs }
+func (p *Plugin) Maps() map[string]*Type                   { return p.maps }
+func (p *Plugin) Scalars() map[string]*Type                { return p.scalars }
+func (p *Plugin) Enums() map[string]*Type                  { return p.enums }
+func (p *Plugin) Types() map[string]*Type                  { return p.types }
+func (p *Plugin) Inputs() map[string]*Type                 { return p.inputs }
+func (p *Plugin) Subscriptions() Methods                   { return p.subscriptions }
+func (p *Plugin) Queries() Methods                         { return p.queries }
+func (p *Plugin) Mutations() Methods                       { return p.mutations }
+func (p *Plugin) GetSchemaByIndex(index int) *bytes.Buffer { return p.schemas[index].buffer }
+
+func (p *Plugin) IsAny(typeName string) (ok bool) {
 	if len(typeName) > 0 && typeName[0] == '.' {
 		messageType := proto.MessageType(strings.TrimPrefix(typeName, "."))
 		if messageType == nil {
@@ -153,10 +99,10 @@ func (p *plugin) IsAny(typeName string) (ok bool) {
 }
 
 // same isEmpty but for mortals
-func (p *plugin) IsEmpty(t *Type) bool { return p.isEmpty(t, make(map[*Type]struct{})) }
+func (p *Plugin) IsEmpty(t *Type) bool { return p.isEmpty(t, make(map[*Type]struct{})) }
 
 // make sure objects are fulled with all types
-func (p *plugin) isEmpty(t *Type, callstack map[*Type]struct{}) bool {
+func (p *Plugin) isEmpty(t *Type, callstack map[*Type]struct{}) bool {
 	callstack[t] = struct{}{} // don't forget to free stack on calling return when needed
 
 	if t.DescriptorProto != nil {
@@ -198,42 +144,17 @@ func (p *plugin) isEmpty(t *Type, callstack map[*Type]struct{}) bool {
 	return false
 }
 
-func (p *plugin) Error(err error, msgs ...string) {
+func (p *Plugin) Error(err error, msgs ...string) {
 	s := strings.Join(msgs, " ") + ":" + err.Error()
 	_ = p.logger.Output(2, s)
 	os.Exit(1)
 }
 
-func (p *plugin) Warn(msgs ...interface{}) {
+func (p *Plugin) Warn(msgs ...interface{}) {
 	_ = p.logger.Output(2, fmt.Sprintln(append([]interface{}{"WARN: "}, msgs...)...))
 }
 
-func (p *plugin) GetSchemaByIndex(index int) *bytes.Buffer { return p.Schema.GetSchemaByIndex(index) }
-func (p *plugin) GetTypesMap() map[*Type]string            { return p.gqlModelNames }
-func (p *plugin) Name() string                             { return "gql" }
-func (p *plugin) Init(g *generator.Generator)              { p.Generator = g }
-
-func (p *plugin) GenerateImports(file *generator.FileDescriptor) {
-	p.PluginImports = generator.NewPluginImports(p.Generator)
-	p.PluginImports.GenerateImports(file)
-}
-
-func (p *plugin) Generate(file *generator.FileDescriptor) {
-	for _, fileName := range p.Request.FileToGenerate {
-		if fileName == file.GetName() {
-			p.NextSchema()
-			// purge data for the current schema
-			p.types, p.inputs, p.enums, p.maps, p.scalars, p.oneofs, p.oneofsRef, p.gqlModelNames,
-				p.subscriptions, p.mutations, p.queries =
-				make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
-				make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
-				make(map[OneofRef]string), make(map[*Type]string), nil, nil, nil
-			p.generate(file)
-		}
-	}
-}
-
-func (p *plugin) getImportPath(file *descriptor.FileDescriptorProto) string {
+func (p *Plugin) getImportPath(file *descriptor.FileDescriptorProto) string {
 	fileName := strings.Split(file.GetName(), "/")
 	gopackageOpt := strings.Split(file.GetOptions().GetGoPackage(), ";")
 
@@ -255,7 +176,7 @@ func (p *plugin) getImportPath(file *descriptor.FileDescriptorProto) string {
 	return "."
 }
 
-func (p *plugin) getEnumType(file *descriptor.FileDescriptorProto, typeName string) *Type {
+func (p *Plugin) getEnumType(file *descriptor.FileDescriptorProto, typeName string) *Type {
 	packagePrefix := "." + file.GetPackage() + "."
 	if strings.HasPrefix(typeName, packagePrefix) {
 		typeWithoutPrefix := strings.TrimPrefix(typeName, packagePrefix)
@@ -273,12 +194,12 @@ func (p *plugin) getEnumType(file *descriptor.FileDescriptorProto, typeName stri
 
 // recursively passes trough all fields of a all types from a given map and completes it with missing types that ar user as fields
 // i. e. if message Type1 { Type2: field1 = 1; } exists in the map this function will look up Type2 and add Type2 to the map as well
-func (p *plugin) FillTypeMap(typeName string, messages map[string]*Type, inputField bool) {
+func (p *Plugin) FillTypeMap(typeName string, messages map[string]*Type, inputField bool) {
 	p.fillTypeMap(typeName, messages, inputField, NewCallstack())
 }
 
 // creates oneof type with full path name
-func (p *plugin) createOneofFromParent(name string, parent *Type, callstack Callstack, inputField bool, field *descriptor.FieldDescriptorProto, file *descriptor.FileDescriptorProto) {
+func (p *Plugin) createOneofFromParent(name string, parent *Type, callstack Callstack, inputField bool, field *descriptor.FieldDescriptorProto, file *descriptor.FileDescriptorProto) {
 	objects := make(map[string]*Type)
 	if inputField {
 		objects = p.inputs
@@ -330,10 +251,10 @@ func (p *plugin) createOneofFromParent(name string, parent *Type, callstack Call
 	} else {
 		p.oneofs[uniqueOneofName].OneofTypes[fieldType] = struct{}{}
 	}
-	p.oneofsRef[OneofRef{parent: parent, index: field.GetOneofIndex()}] = uniqueOneofName
+	p.oneofsRef[OneofRef{Parent: parent, Index: field.GetOneofIndex()}] = uniqueOneofName
 }
 
-func (p *plugin) getMessageType(file *descriptor.FileDescriptorProto, typeName string) *Type {
+func (p *Plugin) getMessageType(file *descriptor.FileDescriptorProto, typeName string) *Type {
 	packagePrefix := "." + file.GetPackage() + "."
 	if strings.HasPrefix(typeName, packagePrefix) {
 		typeWithoutPrefix := strings.TrimPrefix(typeName, packagePrefix)
@@ -359,7 +280,7 @@ func (p *plugin) getMessageType(file *descriptor.FileDescriptorProto, typeName s
 	return nil
 }
 
-func (p *plugin) fillTypeMap(typeName string, objects map[string]*Type, inputField bool, callstack Callstack) {
+func (p *Plugin) fillTypeMap(typeName string, objects map[string]*Type, inputField bool, callstack Callstack) {
 	callstack.Push(typeName) // if add a return statement dont forget to clean stack
 	defer callstack.Pop(typeName)
 
@@ -406,7 +327,7 @@ func (p *plugin) fillTypeMap(typeName string, objects map[string]*Type, inputFie
 	}
 }
 
-func (p *plugin) defineGqlTypes(entries map[string]*Type, suffix ...string) {
+func (p *Plugin) defineGqlTypes(entries map[string]*Type, suffix ...string) {
 	gqlModels := make(map[string]*Type)
 	scalars := make(map[string]struct{})
 	for _, scalar := range p.scalars {
@@ -430,19 +351,146 @@ func (p *plugin) defineGqlTypes(entries map[string]*Type, suffix ...string) {
 		// concatenate package name in case if two types with the same name are found
 		if sameModel, ok := gqlModels[entryName]; ok {
 			// redesign old type to have package namespace as well
-			p.gqlModelNames[sameModel] = sameModel.packageName + entryName
+			p.gqlModelNames[p.fileIndex][sameModel] = sameModel.packageName + entryName
 			gqlModels[sameModel.packageName+entryName] = sameModel
 
 			entryName = entry.packageName + entryName
 		}
 
 		// add entries to the type map
-		p.gqlModelNames[entry] = entryName
+		p.gqlModelNames[p.fileIndex][entry] = entryName
 		gqlModels[entryName] = entry
 	}
 }
 
-func (p *plugin) generate(file *generator.FileDescriptor) {
+func (p *Plugin) getMethodType(rpc *descriptor.MethodDescriptorProto) gql.Type {
+	if rpc.Options != nil {
+		v, err := proto.GetExtension(rpc.Options, gql.E_RpcType)
+		if err == nil {
+			tt := v.(*gql.Type)
+			if tt != nil {
+				return *tt
+			}
+		} else {
+			p.Error(err)
+		}
+	}
+
+	return gql.Type_DEFAULT
+}
+
+func (p *Plugin) getServiceType(svc *descriptor.ServiceDescriptorProto) gql.Type {
+	if svc.Options != nil {
+		v, err := proto.GetExtension(svc.Options, gql.E_SvcType)
+		if err == nil {
+			tt := v.(*gql.Type)
+			if tt != nil {
+				return *tt
+			}
+		} else {
+			p.Error(err)
+		}
+	}
+
+	return gql.Type_DEFAULT
+}
+
+func (p *Plugin) PrintComments(path ...int) bool {
+	nl := ""
+	comments := p.Comments(strings.Join(func() (pp []string) {
+		for p := range path {
+			pp = append(pp, strconv.Itoa(p))
+		}
+		return
+	}(), ","))
+	if comments == "" {
+		return false
+	}
+	for _, line := range strings.Split(comments, "\n") {
+		p.schemas[p.fileIndex].P(nl, "# ", strings.TrimPrefix(line, " "))
+		nl = "\n"
+	}
+	return true
+}
+
+func (p *Plugin) checkInitialized() {
+	if p.fileIndex == -1 {
+		panic("file is not initialized! please use the InitFile(file) method for the file you want to generate code")
+	}
+}
+
+func (p *Plugin) GraphQLType(field *descriptor.FieldDescriptorProto, messagesIn map[string]*Type) string {
+	p.checkInitialized()
+	var gqltype string
+	switch field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		gqltype = "Float"
+	case descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT64:
+		gqltype = "Int"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		gqltype = "Boolean"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		gqltype = "String"
+	case descriptor.FieldDescriptorProto_TYPE_GROUP:
+		p.Error(errors.New("proto2 groups are not supported please use proto3 syntax"))
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		gqltype = "Bytes"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		gqltype = p.gqlModelNames[p.fileIndex][p.enums[field.GetTypeName()]]
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		if msg, ok := messagesIn[field.GetTypeName()]; ok {
+			gqltype = p.gqlModelNames[p.fileIndex][msg]
+		} else if scalar, ok := p.scalars[field.GetTypeName()]; ok {
+			gqltype = p.gqlModelNames[p.fileIndex][scalar]
+		} else if mp, ok := p.maps[field.GetTypeName()]; ok {
+			return p.gqlModelNames[p.fileIndex][mp]
+		} else {
+			panic("unknown proto field type")
+		}
+	default:
+		panic("unknown proto field type")
+	}
+
+	suffix := ""
+	prefix := ""
+	if field.IsRepeated() {
+		prefix += "["
+		suffix += "!]"
+	}
+	if resolveRequired(field) {
+		suffix += "!"
+	}
+
+	return prefix + gqltype + suffix
+}
+
+func (p *Plugin) In() {
+	p.checkInitialized()
+	p.schemas[p.fileIndex].In()
+}
+
+func (p *Plugin) Out() {
+	p.checkInitialized()
+	p.schemas[p.fileIndex].Out()
+}
+
+func (p *Plugin) P(str ...interface{}) {
+	p.checkInitialized()
+	p.schemas[p.fileIndex].P(str...)
+}
+func (p *Plugin) GqlModelNames() map[*Type]string {
+	p.checkInitialized()
+	return p.gqlModelNames[p.fileIndex]
+}
+
+func (p *Plugin) defineMethods(file *generator.FileDescriptor) {
 	for svci, svc := range file.GetService() {
 		for rpci, rpc := range svc.GetMethod() {
 			m := &Method{
@@ -482,7 +530,20 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 			p.types[rpc.GetOutputType()] = &Type{}
 		}
 	}
+}
 
+func (p *Plugin) InitFile(file *generator.FileDescriptor) {
+	p.fileIndex++
+	p.schemas = append(p.schemas, &schema{buffer: &bytes.Buffer{}})
+	p.gqlModelNames = append(p.gqlModelNames, make(map[*Type]string))
+	// purge data for the current schema
+	p.types, p.inputs, p.enums, p.maps, p.scalars, p.oneofs, p.oneofsRef,
+		p.subscriptions, p.mutations, p.queries =
+		make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
+		make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
+		make(map[OneofRef]string), nil, nil, nil
+
+	p.defineMethods(file)
 	// get all input messages
 	for inputName := range p.inputs {
 		p.FillTypeMap(inputName, p.inputs, true)
@@ -500,353 +561,4 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 	p.defineGqlTypes(p.maps)
 	p.defineGqlTypes(p.scalars)
 	p.defineGqlTypes(p.oneofs)
-
-	// Start rendering
-	p.Schema.P("# Code generated by protoc-gen-gogql. DO NOT EDIT")
-	p.Schema.P("# source: ", file.GetName(), "\n")
-	p.PrintComments(2)
-	// TODO: add comments from proto to gql for documentation purposes to all elements. Currently are supported only a few
-
-	if len(p.oneofs) > 0 {
-		p.Schema.P("directive @oneof(name: String) on FIELD_DEFINITION\n")
-	}
-	// scalars
-	for _, entry := range typeMap2List(p.scalars) {
-		scalar := entry.Value
-		if !scalar.BuiltIn {
-			p.Schema.P("scalar ", p.gqlModelNames[scalar], "\n")
-		}
-	}
-	// maps
-	for _, entry := range typeMap2List(p.maps) {
-		m := entry.Value
-		key, val := m.GetMapFields()
-
-		messagesIn := make(map[string]*Type)
-		if m.UsedAsInput {
-			messagesIn = p.inputs
-		} else {
-			messagesIn = p.types
-		}
-		p.Schema.P("# map with key: '", p.graphQLType(key, nil), "' and value: '", p.graphQLType(val, messagesIn), "'")
-		p.Schema.P("scalar ", p.gqlModelNames[m], "\n")
-	}
-
-	// render gql inputs
-	for _, entry := range typeMap2List(p.inputs) {
-		protoTypeName, m := entry.Key, entry.Value
-		if p.IsEmpty(m) || p.IsAny(protoTypeName) {
-			continue
-		}
-		p.Schema.P("input ", p.gqlModelNames[m], " {")
-		p.Schema.In()
-		for _, f := range m.GetField() {
-			opts := p.getGqlFieldOptions(f)
-			if opts != nil {
-				if opts.Dirs != nil {
-					*opts.Dirs = strings.Trim(*opts.Dirs, " ")
-				}
-			}
-
-			if typ, ok := p.inputs[f.GetTypeName()]; ok {
-				if p.IsEmpty(typ) {
-					continue
-				}
-			}
-			oneof := ""
-			if f.OneofIndex != nil {
-				oneof = fmt.Sprintf("@oneof(name: %q)", p.gqlModelNames[p.oneofs[p.oneofsRef[OneofRef{parent: m, index: f.GetOneofIndex()}]]])
-			}
-			p.Schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), ": ", p.graphQLType(f, p.inputs), " ", oneof, " ", opts.GetDirs())
-		}
-		p.Schema.Out()
-		p.Schema.P("}\n")
-	}
-
-	// render gql types
-	for _, entry := range typeMap2List(p.types) {
-		protoTypeName, m := entry.Key, entry.Value
-		if p.IsEmpty(m) || p.IsAny(protoTypeName) {
-			continue
-		}
-		p.Schema.P("type ", p.gqlModelNames[m], " {")
-		p.Schema.In()
-		oneofs := make(map[OneofRef]struct{})
-		for _, f := range m.GetField() {
-			if f.OneofIndex != nil {
-				oneofRef := OneofRef{parent: m, index: *f.OneofIndex}
-				if _, ok := oneofs[oneofRef]; !ok {
-					p.Schema.P(ToLowerFirst(generator.CamelCase(m.OneofDecl[*f.OneofIndex].GetName())), ": ", p.gqlModelNames[p.oneofs[p.oneofsRef[oneofRef]]])
-				}
-				oneofs[oneofRef] = struct{}{}
-				continue
-			}
-			opts := p.getGqlFieldOptions(f)
-			if opts != nil {
-				if opts.Params != nil {
-					*opts.Params = "(" + strings.Trim(*opts.Params, " ") + ")"
-				}
-				if opts.Dirs != nil {
-					*opts.Dirs = strings.Trim(*opts.Dirs, " ")
-				}
-			}
-
-			if typ, ok := p.types[f.GetTypeName()]; ok {
-				if p.IsEmpty(typ) {
-					continue
-				}
-			}
-
-			p.Schema.P(ToLowerFirst(generator.CamelCase(f.GetName())), opts.GetParams(), ": ", p.graphQLType(f, p.types), " ", opts.GetDirs())
-		}
-		p.Schema.Out()
-		p.Schema.P("}\n")
-	}
-
-	for _, entry := range typeMap2List(p.oneofs) {
-		oneof := entry.Value
-		p.Schema.P("union ", p.gqlModelNames[oneof], " = ", strings.Join(func() (ss []string) {
-			for typeName := range oneof.OneofTypes {
-				ss = append(ss, p.gqlModelNames[p.types[typeName]])
-			}
-			return
-		}(), " | "), "\n")
-	}
-
-	// render enums
-	for _, e := range p.enums {
-		p.Schema.P("enum ", p.gqlModelNames[e], " {")
-		p.Schema.In()
-		for _, v := range e.GetValue() {
-			p.Schema.P(v.GetName())
-		}
-		p.Schema.Out()
-		p.Schema.P("}\n")
-	}
-
-	renderMethod := func(methods []*Method) {
-		for _, m := range methods {
-			in, out := "", "Boolean!"
-
-			// some scalars can be used as inputs such as 'Any'
-			if scalar, ok := p.scalars[m.InputType]; ok {
-				if !p.IsEmpty(scalar) {
-					in = "(in: " + p.gqlModelNames[scalar] + ")"
-				}
-			} else if input, ok := p.inputs[m.InputType]; ok {
-				if !p.IsEmpty(input) {
-					in = "(in: " + p.gqlModelNames[input] + ")"
-				}
-			}
-			if scalar, ok := p.scalars[m.OutputType]; ok {
-				if !p.IsEmpty(scalar) {
-					in = "(in: " + p.gqlModelNames[scalar] + ")"
-				}
-			} else if typ, ok := p.types[m.OutputType]; ok {
-				if !p.IsEmpty(typ) {
-					out = p.gqlModelNames[typ]
-				}
-			}
-
-			p.PrintComments(6, m.ServiceIndex, 2, m.Index)
-			if m.Phony {
-				p.Schema.P("# See the Subscription with the same name")
-			}
-			p.Schema.P(m.Name, in, ": ", out)
-		}
-	}
-
-	if len(p.mutations) > 0 {
-		p.Schema.P("type Mutation {")
-		p.Schema.In()
-		renderMethod(p.mutations)
-		p.Schema.Out()
-		p.Schema.P("}\n")
-	}
-	if len(p.queries) > 0 {
-		p.Schema.P("type Query {")
-		p.Schema.In()
-		renderMethod(p.queries)
-		p.Schema.Out()
-		p.Schema.P("}\n")
-	}
-	if len(p.subscriptions) > 0 {
-		p.Schema.P("type Subscription {")
-		p.Schema.In()
-		renderMethod(p.subscriptions)
-		p.Schema.Out()
-		p.Schema.P("}\n")
-	}
-}
-
-func resolveRequired(field *descriptor.FieldDescriptorProto) bool {
-	if v := getValidatorType(field); v != nil {
-		switch {
-		case v.GetMsgExists():
-			return true
-		case v.GetStringNotEmpty():
-			return true
-		case v.GetRepeatedCountMin() > 0:
-			return true
-		}
-	}
-	return false
-}
-
-func ToLowerFirst(s string) string {
-	if len(s) > 0 {
-		return string(unicode.ToLower(rune(s[0]))) + s[1:]
-	}
-	return ""
-}
-
-func (p *plugin) getMethodType(rpc *descriptor.MethodDescriptorProto) gql.Type {
-	if rpc.Options != nil {
-		v, err := proto.GetExtension(rpc.Options, gql.E_RpcType)
-		if err == nil {
-			tt := v.(*gql.Type)
-			if tt != nil {
-				return *tt
-			}
-		} else {
-			p.Error(err)
-		}
-	}
-
-	return gql.Type_DEFAULT
-}
-
-func (p *plugin) getServiceType(svc *descriptor.ServiceDescriptorProto) gql.Type {
-	if svc.Options != nil {
-		v, err := proto.GetExtension(svc.Options, gql.E_SvcType)
-		if err == nil {
-			tt := v.(*gql.Type)
-			if tt != nil {
-				return *tt
-			}
-		} else {
-			p.Error(err)
-		}
-	}
-
-	return gql.Type_DEFAULT
-}
-
-func (p *plugin) getGqlFieldOptions(field *descriptor.FieldDescriptorProto) *gql.Field {
-	if field.Options != nil {
-		v, err := proto.GetExtension(field.Options, gql.E_Field)
-		if err == nil && v.(*gql.Field) != nil {
-			return v.(*gql.Field)
-		}
-	}
-	return nil
-}
-
-func (p *plugin) PrintComments(path ...int) bool {
-	nl := ""
-	comments := p.Comments(strings.Join(func() (pp []string) {
-		for p := range path {
-			pp = append(pp, strconv.Itoa(p))
-		}
-		return
-	}(), ","))
-	if comments == "" {
-		return false
-	}
-	for _, line := range strings.Split(comments, "\n") {
-		p.Schema.P(nl, "# ", strings.TrimPrefix(line, " "))
-		nl = "\n"
-	}
-	return true
-}
-
-func (p *plugin) graphQLType(field *descriptor.FieldDescriptorProto, messagesIn map[string]*Type) string {
-	var gqltype string
-	switch field.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		gqltype = "Float"
-	case descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
-		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64:
-		gqltype = "Int"
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		gqltype = "Boolean"
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		gqltype = "String"
-	case descriptor.FieldDescriptorProto_TYPE_GROUP:
-		p.Error(errors.New("proto2 groups are not supported please use proto3 syntax"))
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		gqltype = "Bytes"
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		gqltype = p.gqlModelNames[p.enums[field.GetTypeName()]]
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		if msg, ok := messagesIn[field.GetTypeName()]; ok {
-			gqltype = p.gqlModelNames[msg]
-		} else if scalar, ok := p.scalars[field.GetTypeName()]; ok {
-			gqltype = p.gqlModelNames[scalar]
-		} else if mp, ok := p.maps[field.GetTypeName()]; ok {
-			return p.gqlModelNames[mp]
-		} else {
-			panic("unknown proto field type")
-		}
-	default:
-		panic("unknown proto field type")
-	}
-
-	suffix := ""
-	prefix := ""
-	if field.IsRepeated() {
-		prefix += "["
-		suffix += "!]"
-	}
-	if resolveRequired(field) {
-		suffix += "!"
-	}
-
-	return prefix + gqltype + suffix
-}
-
-func getValidatorType(field *descriptor.FieldDescriptorProto) *validator.FieldValidator {
-	if field.Options != nil {
-		v, err := proto.GetExtension(field.Options, validator.E_Field)
-		if err == nil && v.(*validator.FieldValidator) != nil {
-			return v.(*validator.FieldValidator)
-		}
-	}
-	return nil
-}
-
-func getEnum(file *descriptor.FileDescriptorProto, typeName string) *descriptor.EnumDescriptorProto {
-	for _, enum := range file.GetEnumType() {
-		if enum.GetName() == typeName {
-			return enum
-		}
-	}
-
-	for _, msg := range file.GetMessageType() {
-		if nes := getNestedEnum(file, msg, strings.TrimPrefix(typeName, msg.GetName()+".")); nes != nil {
-			return nes
-		}
-	}
-	return nil
-}
-
-func getNestedEnum(file *descriptor.FileDescriptorProto, msg *descriptor.DescriptorProto, typeName string) *descriptor.EnumDescriptorProto {
-	for _, enum := range msg.GetEnumType() {
-		if enum.GetName() == typeName {
-			return enum
-		}
-	}
-
-	for _, nes := range msg.GetNestedType() {
-		if res := getNestedEnum(file, nes, strings.TrimPrefix(typeName, nes.GetName()+".")); res != nil {
-			return res
-		}
-	}
-	return nil
 }

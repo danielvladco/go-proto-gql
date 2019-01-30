@@ -1,6 +1,6 @@
 syntax = "proto3";
 package pb;
-option go_package = "github.com/danielvladco/go-proto-gql/examples/pb;pb";
+option go_package = "github.com/danielvladco/go-proto-gql/example;pb";
 
 import "gql.proto";
 import "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto";

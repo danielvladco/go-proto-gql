@@ -60,7 +60,7 @@ For more documentation inspect code ;)
    
 TODO:
 -
-- There are some edge-cases where the generated gql will be invalid. They are pretty rare and can be ignored 
+- There are some edge-cases where the generated gql will be invalid (ex. do not use this names as fields: reset, string, protoMessage, descriptor). They are pretty rare and can be ignored 
 - Add tests (needs to be tested all numbers: float, int, uint, double etc.)
 - Add comments from proto to gql for documentation purposes
 - Make plugin for generating gqlgen.yml files

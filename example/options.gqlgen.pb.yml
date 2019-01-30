@@ -1,0 +1,17 @@
+schema:
+- options.pb.graphqls
+exec:
+  filename: exec.go
+model:
+  filename: models.go
+resolver:
+  filename: resolvers.go
+models:
+  Data:
+    model: github.com/danielvladco/go-proto-gql/example.Data
+  DataInput:
+    model: github.com/danielvladco/go-proto-gql/example.Data
+  Foo2:
+    model: github.com/danielvladco/go-proto-gql/example.Foo2
+  Foo2Input:
+    model: github.com/danielvladco/go-proto-gql/example.Foo2
