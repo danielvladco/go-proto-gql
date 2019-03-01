@@ -202,6 +202,8 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 		p.renderMethod(p.Queries())
 		p.Out()
 		p.P("}\n")
+	} else {
+		p.P("type Query { dummy: Boolean }\n")
 	}
 	if len(p.Subscriptions()) > 0 {
 		p.P("type Subscription {")

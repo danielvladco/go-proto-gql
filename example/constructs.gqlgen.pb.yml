@@ -17,6 +17,8 @@ models:
     model: github.com/danielvladco/go-proto-gql/example.Baz
   Bytes:
     model: github.com/danielvladco/go-proto-gql/gqltypes.Bytes
+  Float32:
+    model: github.com/danielvladco/go-proto-gql/gqltypes.Float32
   Foo:
     model: github.com/danielvladco/go-proto-gql/example.Foo
   Foo_Foo2:
@@ -25,8 +27,10 @@ models:
     model: github.com/danielvladco/go-proto-gql/example.Foo_Foo2
   FooInput:
     model: github.com/danielvladco/go-proto-gql/example.Foo
-  Input:
-    model: .
+  Int32:
+    model: github.com/danielvladco/go-proto-gql/gqltypes.Int32
+  Int64:
+    model: github.com/danielvladco/go-proto-gql/gqltypes.Int64
   IsOneof_Oneof1:
     model: github.com/danielvladco/go-proto-gql/example.IsOneof_Oneof1
   IsOneof_Oneof2:
@@ -117,6 +121,10 @@ models:
     model: github.com/danielvladco/go-proto-gql/example.Scalars
   ScalarsInput:
     model: github.com/danielvladco/go-proto-gql/example.Scalars
+  Uint32:
+    model: github.com/danielvladco/go-proto-gql/gqltypes.Uint32
+  Uint64:
+    model: github.com/danielvladco/go-proto-gql/gqltypes.Uint64
   google_protobuf_Timestamp:
     model: github.com/golang/protobuf/ptypes/timestamp.Timestamp
   google_protobuf_TimestampInput:

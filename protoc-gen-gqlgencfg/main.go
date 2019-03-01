@@ -78,7 +78,7 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 			}
 
 			for typ, key := range p.GqlModelNames() {
-				if p.IsEmpty(typ) {
+				if typ == nil || p.IsEmpty(typ) || key == "Input" || key == "" { // filter possible junk data
 					continue
 				}
 

@@ -18,6 +18,27 @@ import (
 	golangproto "github.com/golang/protobuf/proto"
 )
 
+const (
+	ScalarBytes      = "Bytes"
+	ScalarFloat32    = "Float32"
+	ScalarInt64      = "Int64"
+	ScalarInt32      = "Int32"
+	ScalarUint32     = "Uint32"
+	ScalarUint64     = "Uint64"
+	ScalarAny        = "Any"
+	ScalarDirective  = "__Directive"
+	ScalarType       = "__Type"
+	ScalarField      = "__Field"
+	ScalarEnumValue  = "__EnumValue"
+	ScalarInputValue = "__InputValue"
+	ScalarSchema     = "__Schema"
+	ScalarInt        = "Int"
+	ScalarFloat      = "Float"
+	ScalarString     = "String"
+	ScalarBoolean    = "Boolean"
+	ScalarID         = "ID"
+)
+
 func NewPlugin() *Plugin {
 	return &Plugin{
 		fileIndex: -1,
@@ -264,7 +285,7 @@ func (p *Plugin) getMessageType(file *descriptor.FileDescriptorProto, typeName s
 			if p.IsAny(typeName) {
 				p.scalars[typeName] = &Type{ModelDescriptor: ModelDescriptor{
 					PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", //TODO generate gqlgen.yml
-					TypeName:   "Any",
+					TypeName:   ScalarAny,
 				}}
 				return nil
 			}
@@ -304,12 +325,34 @@ func (p *Plugin) fillTypeMap(typeName string, objects map[string]*Type, inputFie
 				if field.OneofIndex != nil {
 					p.createOneofFromParent(message.OneofDecl[field.GetOneofIndex()].GetName(), message, callstack, inputField, field, file)
 				}
-				if field.IsBytes() {
-					p.scalars["Bytes"] = &Type{ModelDescriptor: ModelDescriptor{
-						PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes",
-						TypeName:   "Bytes",
-					}} // we will need to add a new scalar for this purpose
+
+				// defines scalars for unsupported graphql types
+				switch *field.Type {
+				case descriptor.FieldDescriptorProto_TYPE_BYTES:
+					p.scalars[ScalarBytes] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarBytes}}
+
+				case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+					p.scalars[ScalarFloat32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarFloat32}}
+
+				case descriptor.FieldDescriptorProto_TYPE_INT64,
+					descriptor.FieldDescriptorProto_TYPE_SINT64,
+					descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+					p.scalars[ScalarInt64] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarInt64}}
+
+				case descriptor.FieldDescriptorProto_TYPE_INT32,
+					descriptor.FieldDescriptorProto_TYPE_SINT32,
+					descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+					p.scalars[ScalarInt32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarInt32}}
+
+				case descriptor.FieldDescriptorProto_TYPE_UINT32,
+					descriptor.FieldDescriptorProto_TYPE_FIXED32:
+					p.scalars[ScalarUint32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarUint32}}
+
+				case descriptor.FieldDescriptorProto_TYPE_UINT64,
+					descriptor.FieldDescriptorProto_TYPE_FIXED64:
+					p.scalars[ScalarUint64] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarUint64}}
 				}
+
 				if !field.IsMessage() && !field.IsEnum() {
 					continue
 				}
@@ -423,27 +466,45 @@ func (p *Plugin) GraphQLType(field *descriptor.FieldDescriptorProto, messagesIn 
 	p.checkInitialized()
 	var gqltype string
 	switch field.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		gqltype = "Float"
-	case descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		gqltype = ScalarFloat
+
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		gqltype = ScalarBytes
+
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		gqltype = ScalarFloat32
+
+	case descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		gqltype = ScalarInt64
+
+	case descriptor.FieldDescriptorProto_TYPE_INT32,
 		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT64:
-		gqltype = "Int"
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+		gqltype = ScalarInt32
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		gqltype = ScalarUint32
+
+	case descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		gqltype = ScalarUint64
+
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		gqltype = "Boolean"
+		gqltype = ScalarBoolean
+
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		gqltype = "String"
+		gqltype = ScalarString
+
 	case descriptor.FieldDescriptorProto_TYPE_GROUP:
 		p.Error(errors.New("proto2 groups are not supported please use proto3 syntax"))
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		gqltype = "Bytes"
+
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		gqltype = p.gqlModelNames[p.fileIndex][p.enums[field.GetTypeName()]]
+
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		if msg, ok := messagesIn[field.GetTypeName()]; ok {
 			gqltype = p.gqlModelNames[p.fileIndex][msg]
@@ -454,6 +515,7 @@ func (p *Plugin) GraphQLType(field *descriptor.FieldDescriptorProto, messagesIn 
 		} else {
 			panic("unknown proto field type")
 		}
+
 	default:
 		panic("unknown proto field type")
 	}

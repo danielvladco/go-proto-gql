@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -65,8 +66,11 @@ func main() {
 type plugin struct {
 	*generator.Generator
 	generator.PluginImports
-	ioPkg    generator.Single
-	fmtPkg   generator.Single
+	ioPkg      generator.Single
+	fmtPkg     generator.Single
+	graphqlPkg generator.Single
+	jsonPkg    generator.Single
+
 	enums    map[string]struct{}
 	messages map[string]struct{}
 
@@ -79,13 +83,51 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	if !p.useGogoImport {
 		vanity.TurnOffGogoImport(file.FileDescriptorProto)
 	}
+
 	p.PluginImports = generator.NewPluginImports(p.Generator)
 	p.fmtPkg = p.NewImport("fmt")
 	p.ioPkg = p.NewImport("io")
+	p.graphqlPkg = p.NewImport("github.com/99designs/gqlgen/graphql")
+	p.jsonPkg = p.NewImport("encoding/json")
+
 	for _, r := range p.Request.FileToGenerate {
 		if r == file.GetName() {
-			for _, j := range file.Enums() {
-				enumType := generator.CamelCaseSlice(j.TypeName())
+			for _, msg := range file.Messages() {
+				if msg.GetOptions().GetMapEntry() {
+					key, value := msg.GetMapFields()
+
+					mapName := generator.CamelCaseSlice(msg.TypeName())
+					keyType, _ := p.GoType(msg, key)
+					valType, _ := p.GoType(msg, value)
+
+					mapType := fmt.Sprintf("map[%s]%s", keyType, valType)
+					p.P(`
+func Marshal`, mapName, `(mp `, mapType, `) `, p.graphqlPkg.Use(), `.Marshaler {
+	return graphql.WriterFunc(func(w `, p.ioPkg.Use(), `.Writer) {
+		err := `, p.jsonPkg.Use(), `.NewEncoder(w).Encode(mp)
+		if err != nil {
+			panic("stupid map")
+		}
+	})
+}
+
+func Unmarshal`, mapName, `(v interface{}) (mp `, mapType, `, err error) {
+	switch vv := v.(type) {
+	case []byte:
+		err = `, p.jsonPkg.Use(), `.Unmarshal(vv, &mp)
+		return mp, err
+	case `, p.jsonPkg.Use(), `.RawMessage:
+		err = `, p.jsonPkg.Use(), `.Unmarshal(vv, &mp)
+		return mp, err
+	default:
+		return nil, `, p.fmtPkg.Use(), `.Errorf("%T is not `, mapType, `", v)
+	}
+}
+`)
+				}
+			}
+			for _, enum := range file.Enums() {
+				enumType := generator.CamelCaseSlice(enum.TypeName())
 				p.P(`
 func (c *`, enumType, `) UnmarshalGQL(v interface{}) error {
 	code, ok := v.(string)

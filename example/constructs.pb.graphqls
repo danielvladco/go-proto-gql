@@ -7,31 +7,41 @@ scalar Any
 
 scalar Bytes
 
+scalar Float32
+
+scalar Int32
+
+scalar Int64
+
+scalar Uint32
+
+scalar Uint64
+
 # map with key: 'Boolean' and value: 'Boolean'
 scalar Maps_BoolBoolEntry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Uint32' and value: 'Uint32'
 scalar Maps_Fixed32Fixed32Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Uint64' and value: 'Uint64'
 scalar Maps_Fixed64Fixed64Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Int32' and value: 'Int32'
 scalar Maps_Int32Int32Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Int64' and value: 'Int64'
 scalar Maps_Int64Int64Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Int32' and value: 'Int32'
 scalar Maps_Sfixed32Sfixed32Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Int64' and value: 'Int64'
 scalar Maps_Sfixed64Sfixed64Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Int32' and value: 'Int32'
 scalar Maps_Sint32Sint32Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Int64' and value: 'Int64'
 scalar Maps_Sint64Sint64Entry
 
 # map with key: 'String' and value: 'Bar'
@@ -43,7 +53,7 @@ scalar Maps_StringBytesEntry
 # map with key: 'String' and value: 'Float'
 scalar Maps_StringDoubleEntry
 
-# map with key: 'String' and value: 'Float'
+# map with key: 'String' and value: 'Float32'
 scalar Maps_StringFloatEntry
 
 # map with key: 'String' and value: 'Foo'
@@ -52,15 +62,15 @@ scalar Maps_StringFooEntry
 # map with key: 'String' and value: 'String'
 scalar Maps_StringStringEntry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Uint32' and value: 'Uint32'
 scalar Maps_Uint32Uint32Entry
 
-# map with key: 'Int' and value: 'Int'
+# map with key: 'Uint64' and value: 'Uint64'
 scalar Maps_Uint64Uint64Entry
 
 input google_protobuf_TimestampInput {
-	seconds: Int  
-	nanos: Int  
+	seconds: Int64  
+	nanos: Int32  
 }
 
 input BazInput {
@@ -142,17 +152,17 @@ input Ref_Foo_Baz_GzInput {
 
 input RepeatedInput {
 	double: [Float!]  
-	float: [Float!]  
-	int32: [Int!]  
-	int64: [Int!]  
-	uint32: [Int!]  
-	uint64: [Int!]  
-	sint32: [Int!]  
-	sint64: [Int!]  
-	fixed32: [Int!]  
-	fixed64: [Int!]  
-	sfixed32: [Int!]  
-	sfixed64: [Int!]  
+	float: [Float32!]  
+	int32: [Int32!]  
+	int64: [Int64!]  
+	uint32: [Uint32!]  
+	uint64: [Uint64!]  
+	sint32: [Int32!]  
+	sint64: [Int64!]  
+	fixed32: [Uint32!]  
+	fixed64: [Uint64!]  
+	sfixed32: [Int32!]  
+	sfixed64: [Int64!]  
 	bool: [Boolean!]  
 	string: [String!]  
 	bytes: [Bytes!]  
@@ -162,17 +172,17 @@ input RepeatedInput {
 
 input ScalarsInput {
 	double: Float  
-	float: Float  
-	int32: Int  
-	int64: Int  
-	uint32: Int  
-	uint64: Int  
-	sint32: Int  
-	sint64: Int  
-	fixed32: Int  
-	fixed64: Int  
-	sfixed32: Int  
-	sfixed64: Int  
+	float: Float32  
+	int32: Int32  
+	int64: Int64  
+	uint32: Uint32  
+	uint64: Uint64  
+	sint32: Int32  
+	sint64: Int64  
+	fixed32: Uint32  
+	fixed64: Uint64  
+	sfixed32: Int32  
+	sfixed64: Int64  
 	bool: Boolean  
 	string: String  
 	bytes: Bytes  
@@ -183,8 +193,8 @@ input pb_TimestampInput {
 }
 
 type google_protobuf_Timestamp {
-	seconds: Int 
-	nanos: Int 
+	seconds: Int64 
+	nanos: Int32 
 }
 
 type pb_Any {
@@ -288,17 +298,17 @@ type Ref_Foo_Baz_Gz {
 
 type Repeated {
 	double: [Float!] 
-	float: [Float!] 
-	int32: [Int!] 
-	int64: [Int!] 
-	uint32: [Int!] 
-	uint64: [Int!] 
-	sint32: [Int!] 
-	sint64: [Int!] 
-	fixed32: [Int!] 
-	fixed64: [Int!] 
-	sfixed32: [Int!] 
-	sfixed64: [Int!] 
+	float: [Float32!] 
+	int32: [Int32!] 
+	int64: [Int64!] 
+	uint32: [Uint32!] 
+	uint64: [Uint64!] 
+	sint32: [Int32!] 
+	sint64: [Int64!] 
+	fixed32: [Uint32!] 
+	fixed64: [Uint64!] 
+	sfixed32: [Int32!] 
+	sfixed64: [Int64!] 
 	bool: [Boolean!] 
 	string: [String!] 
 	bytes: [Bytes!] 
@@ -308,17 +318,17 @@ type Repeated {
 
 type Scalars {
 	double: Float 
-	float: Float 
-	int32: Int 
-	int64: Int 
-	uint32: Int 
-	uint64: Int 
-	sint32: Int 
-	sint64: Int 
-	fixed32: Int 
-	fixed64: Int 
-	sfixed32: Int 
-	sfixed64: Int 
+	float: Float32 
+	int32: Int32 
+	int64: Int64 
+	uint32: Uint32 
+	uint64: Uint64 
+	sint32: Int32 
+	sint64: Int64 
+	fixed32: Uint32 
+	fixed64: Uint64 
+	sfixed32: Int32 
+	sfixed64: Int64 
 	bool: Boolean 
 	string: String 
 	bytes: Bytes 
@@ -328,7 +338,7 @@ type pb_Timestamp {
 	time: String 
 }
 
-union IsOneof_Oneof1 = Oneof_Param2 | Oneof_Param3
+union IsOneof_Oneof1 = Oneof_Param3 | Oneof_Param2
 
 union IsOneof_Oneof2 = Oneof_Param4 | Oneof_Param5
 
@@ -361,4 +371,6 @@ type Mutation {
 	constructsRef_(in: RefInput): Ref
 	constructsOneof_(in: OneofInput): Oneof
 }
+
+type Query { dummy: Boolean }
 
