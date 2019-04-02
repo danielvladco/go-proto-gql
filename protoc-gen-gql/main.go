@@ -216,7 +216,7 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 
 func (p *plugin) renderMethod(methods []*Method) {
 	for _, m := range methods {
-		in, out := "", "Boolean!"
+		in, out := "", "Boolean"
 
 		// some scalars can be used as inputs such as 'Any'
 		if scalar, ok := p.Scalars()[m.InputType]; ok {

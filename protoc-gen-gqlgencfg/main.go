@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/99designs/gqlgen/codegen"
+	codegen "github.com/99designs/gqlgen/codegen/config"
 	. "github.com/danielvladco/go-proto-gql/plugin"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
@@ -37,7 +37,7 @@ func main() {
 	for i := 0; i < fileLen; i++ {
 		gen.Response.File[i].Name = proto.String(strings.Replace(gen.Response.File[i].GetName(), ".pb.go", ".gqlgen.pb.yml", -1))
 		_, file := path.Split(strings.Replace(gen.Response.File[i].GetName(), ".gqlgen.pb.yml", ".pb.graphqls", -1))
-		p.config[i].SchemaFilename = []string{file}
+		p.config[i].SchemaFilename = []string{path.Join(".", file)}
 		b, err := yaml.Marshal(p.config[i])
 		if err != nil {
 			p.Error(errors.New("cannot create codegen.yml"))
@@ -72,7 +72,6 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 			cfg := &codegen.Config{
 				SchemaFilename: []string{},
 				Exec:           codegen.PackageConfig{Filename: "exec.go"},
-				Resolver:       codegen.PackageConfig{Filename: "resolvers.go"},
 				Model:          codegen.PackageConfig{Filename: "models.go"},
 				Models:         make(codegen.TypeMap),
 			}
@@ -83,10 +82,10 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 				}
 
 				if m, ok := cfg.Models[key]; ok {
-					m.Model = typ.PackageDir + "." + typ.TypeName
+					m.Model = []string{typ.PackageDir + "." + typ.TypeName}
 					cfg.Models[key] = m
 				} else {
-					cfg.Models[key] = codegen.TypeMapEntry{Model: typ.PackageDir + "." + typ.TypeName}
+					cfg.Models[key] = codegen.TypeMapEntry{Model: []string{typ.PackageDir + "." + typ.TypeName}}
 				}
 			}
 			p.config = append(p.config, cfg)

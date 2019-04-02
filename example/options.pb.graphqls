@@ -34,11 +34,11 @@ type Mutation {
 	serviceMutate2(in: DataInput): Data
 	servicePublish(in: DataInput): Data
 	# See the Subscription with the same name
-	servicePubSub1(in: DataInput): Boolean!
+	servicePubSub1(in: DataInput): Boolean
 	# See the Subscription with the same name
-	serviceInvalidSubscribe3(in: DataInput): Boolean!
+	serviceInvalidSubscribe3(in: DataInput): Boolean
 	# See the Subscription with the same name
-	servicePubSub2(in: DataInput): Boolean!
+	servicePubSub2(in: DataInput): Boolean
 	queryMutate1(in: DataInput): Data
 }
 

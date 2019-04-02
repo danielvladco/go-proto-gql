@@ -338,7 +338,7 @@ type pb_Timestamp {
 	time: String 
 }
 
-union IsOneof_Oneof1 = Oneof_Param3 | Oneof_Param2
+union IsOneof_Oneof1 = Oneof_Param2 | Oneof_Param3
 
 union IsOneof_Oneof2 = Oneof_Param4 | Oneof_Param5
 
@@ -365,9 +365,9 @@ type Mutation {
 	constructsRepeated_(in: RepeatedInput): Repeated
 	constructsMaps_(in: MapsInput): Maps
 	constructsAny_(in: Any): pb_Any
-	constructsEmpty_: Boolean!
-	constructsEmpty2_: Boolean!
-	constructsEmpty3_: Boolean!
+	constructsEmpty_: Boolean
+	constructsEmpty2_: Boolean
+	constructsEmpty3_: Boolean
 	constructsRef_(in: RefInput): Ref
 	constructsOneof_(in: OneofInput): Oneof
 }

@@ -1,6 +1,7 @@
 package gqltypes
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,10 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 )
+
+type DummyResolver struct{}
+
+func (r *DummyResolver) Dummy(ctx context.Context) (*bool, error) { return nil, nil }
 
 func MarshalBytes(b []byte) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
@@ -29,10 +34,10 @@ func UnmarshalBytes(v interface{}) ([]byte, error) {
 	}
 }
 
-func MarshalAny(any *any.Any) graphql.Marshaler {
+func MarshalAny(any any.Any) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		d := &ptypes.DynamicAny{}
-		if err := ptypes.UnmarshalAny(any, d); err != nil {
+		if err := ptypes.UnmarshalAny(&any, d); err != nil {
 			panic("unable to unmarshal any: " + err.Error())
 			return
 		}
@@ -43,14 +48,14 @@ func MarshalAny(any *any.Any) graphql.Marshaler {
 	})
 }
 
-func UnmarshalAny(v interface{}) (*any.Any, error) {
+func UnmarshalAny(v interface{}) (any.Any, error) {
 	switch v := v.(type) {
 	case []byte:
-		return nil, nil //TODO add an unmarshal mechanism
+		return any.Any{}, nil //TODO add an unmarshal mechanism
 	case json.RawMessage:
-		return nil, nil
+		return any.Any{}, nil
 	default:
-		return nil, fmt.Errorf("%T is not json.RawMessage", v)
+		return any.Any{}, fmt.Errorf("%T is not json.RawMessage", v)
 	}
 }
 
