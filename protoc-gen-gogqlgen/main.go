@@ -103,7 +103,7 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		if r == file.GetName() {
 			p.InitFile(file)
 			for _, svc := range file.GetService() {
-				p.Generator.P(`type `, svc.GetName(), `GQLServer struct { svc `, svc.GetName(), `Server }`)
+				p.Generator.P(`type `, svc.GetName(), `GQLServer struct { Service `, svc.GetName(), `Server }`)
 				for _, rpc := range svc.GetMethod() {
 					methodName := strings.Replace(generator.CamelCase(svc.GetName()+rpc.GetName()), "_", "", -1)
 					typeInObj := p.TypeNameByObject(rpc.GetInputType())

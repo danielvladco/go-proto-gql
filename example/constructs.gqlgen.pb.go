@@ -23,7 +23,7 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type ConstructsGQLServer struct{ svc ConstructsServer }
+type ConstructsGQLServer struct{ Service ConstructsServer }
 
 func (s *ConstructsGQLServer) ConstructsScalars(ctx context.Context, in *Scalars) (*Scalars, error) {
 	return s.svc.Scalars_(ctx, in)

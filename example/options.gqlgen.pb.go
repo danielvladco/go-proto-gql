@@ -17,7 +17,7 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type ServiceGQLServer struct{ svc ServiceServer }
+type ServiceGQLServer struct{ Service ServiceServer }
 
 func (s *ServiceGQLServer) ServiceMutate1(ctx context.Context, in *Data) (*Data, error) {
 	return s.svc.Mutate1(ctx, in)
@@ -50,7 +50,7 @@ func (s *ServiceGQLServer) ServicePubSub2(ctx context.Context, in *Data) (*Data,
 	return s.svc.PubSub2(ctx, in)
 }
 
-type QueryGQLServer struct{ svc QueryServer }
+type QueryGQLServer struct{ Service QueryServer }
 
 func (s *QueryGQLServer) QueryQuery1(ctx context.Context, in *Data) (*Data, error) {
 	return s.svc.Query1(ctx, in)
