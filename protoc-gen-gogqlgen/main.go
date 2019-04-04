@@ -122,9 +122,9 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 						in, inref = "", ", &"+typeIn+"{}"
 					}
 					if p.IsEmpty(p.Types()[rpc.GetOutputType()]) {
-						p.Generator.P("func (s *", svc.GetName(), "GQLServer) ", methodName, "(ctx ", p.contextPkg.Use(), ".Context", in, ") (*bool, error) { _, err := s.svc.", generator.CamelCase(rpc.GetName()), "(ctx", inref, ")\n return nil, err }")
+						p.Generator.P("func (s *", svc.GetName(), "GQLServer) ", methodName, "(ctx ", p.contextPkg.Use(), ".Context", in, ") (*bool, error) { _, err := s.Service.", generator.CamelCase(rpc.GetName()), "(ctx", inref, ")\n return nil, err }")
 					} else {
-						p.Generator.P("func (s *", svc.GetName(), "GQLServer) ", methodName, "(ctx ", p.contextPkg.Use(), ".Context", in, ") (*", typeOut, ", error) { return s.svc.", generator.CamelCase(rpc.GetName()), "(ctx", inref, ") }")
+						p.Generator.P("func (s *", svc.GetName(), "GQLServer) ", methodName, "(ctx ", p.contextPkg.Use(), ".Context", in, ") (*", typeOut, ", error) { return s.Service.", generator.CamelCase(rpc.GetName()), "(ctx", inref, ") }")
 					}
 				}
 			}
