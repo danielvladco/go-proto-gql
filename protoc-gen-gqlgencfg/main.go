@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 
-	codegen "github.com/99designs/gqlgen/codegen/config"
 	. "github.com/danielvladco/go-proto-gql/plugin"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
@@ -58,7 +57,7 @@ func main() {
 type plugin struct {
 	*Plugin
 
-	config []*codegen.Config
+	config []*config
 }
 
 func (p *plugin) GenerateImports(file *generator.FileDescriptor) {}
@@ -69,11 +68,11 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 		if fileName == file.GetName() {
 			p.InitFile(file)
 
-			cfg := &codegen.Config{
+			cfg := &config{
 				SchemaFilename: []string{},
-				Exec:           codegen.PackageConfig{Filename: "exec.go"},
-				Model:          codegen.PackageConfig{Filename: "models.go"},
-				Models:         make(codegen.TypeMap),
+				Exec:           packageConfig{Filename: "exec.go"},
+				Model:          packageConfig{Filename: "models.go"},
+				Models:         make(map[string]typeMapEntry),
 			}
 
 			for typ, key := range p.GqlModelNames() {
@@ -85,10 +84,36 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 					m.Model = []string{typ.PackageDir + "." + typ.TypeName}
 					cfg.Models[key] = m
 				} else {
-					cfg.Models[key] = codegen.TypeMapEntry{Model: []string{typ.PackageDir + "." + typ.TypeName}}
+					cfg.Models[key] = typeMapEntry{Model: []string{typ.PackageDir + "." + typ.TypeName}}
 				}
 			}
 			p.config = append(p.config, cfg)
 		}
 	}
 }
+
+type (
+	config struct {
+		SchemaFilename []string                `yaml:"schema,omitempty"`
+		Exec           packageConfig           `yaml:"exec"`
+		Model          packageConfig           `yaml:"model"`
+		Resolver       packageConfig           `yaml:"resolver,omitempty"`
+		Models         map[string]typeMapEntry `yaml:"models,omitempty"`
+		StructTag      string                  `yaml:"struct_tag,omitempty"`
+	}
+
+	packageConfig struct {
+		Filename string `yaml:"filename,omitempty"`
+		Package  string `yaml:"package,omitempty"`
+		Type     string `yaml:"type,omitempty"`
+	}
+
+	typeMapEntry struct {
+		Model  []string                `yaml:"model"`
+		Fields map[string]typeMapField `yaml:"fields,omitempty"`
+	}
+	typeMapField struct {
+		Resolver  bool   `yaml:"resolver"`
+		FieldName string `yaml:"fieldName"`
+	}
+)

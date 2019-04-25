@@ -7,7 +7,7 @@ import (
 	context "context"
 	encoding_json "encoding/json"
 	fmt "fmt"
-	github_com_99designs_gqlgen_graphql "github.com/99designs/gqlgen/graphql"
+	github_com_danielvladco_go_proto_gql_gqltypes "github.com/danielvladco/go-proto-gql/gqltypes"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/golang/protobuf/ptypes/any"
 	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
@@ -60,8 +60,8 @@ func (s *ConstructsGQLServer) ConstructsCallWithID(ctx context.Context) (*bool, 
 	return nil, err
 }
 
-func MarshalMaps_Int32Int32Entry(mp map[int32]int32) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Int32Int32Entry(mp map[int32]int32) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -82,8 +82,8 @@ func UnmarshalMaps_Int32Int32Entry(v interface{}) (mp map[int32]int32, err error
 	}
 }
 
-func MarshalMaps_Int64Int64Entry(mp map[int64]int64) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Int64Int64Entry(mp map[int64]int64) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -104,8 +104,8 @@ func UnmarshalMaps_Int64Int64Entry(v interface{}) (mp map[int64]int64, err error
 	}
 }
 
-func MarshalMaps_Uint32Uint32Entry(mp map[uint32]uint32) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Uint32Uint32Entry(mp map[uint32]uint32) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -126,8 +126,8 @@ func UnmarshalMaps_Uint32Uint32Entry(v interface{}) (mp map[uint32]uint32, err e
 	}
 }
 
-func MarshalMaps_Uint64Uint64Entry(mp map[uint64]uint64) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Uint64Uint64Entry(mp map[uint64]uint64) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -148,8 +148,8 @@ func UnmarshalMaps_Uint64Uint64Entry(v interface{}) (mp map[uint64]uint64, err e
 	}
 }
 
-func MarshalMaps_Sint32Sint32Entry(mp map[int32]int32) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Sint32Sint32Entry(mp map[int32]int32) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -170,8 +170,8 @@ func UnmarshalMaps_Sint32Sint32Entry(v interface{}) (mp map[int32]int32, err err
 	}
 }
 
-func MarshalMaps_Sint64Sint64Entry(mp map[int64]int64) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Sint64Sint64Entry(mp map[int64]int64) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -192,8 +192,8 @@ func UnmarshalMaps_Sint64Sint64Entry(v interface{}) (mp map[int64]int64, err err
 	}
 }
 
-func MarshalMaps_Fixed32Fixed32Entry(mp map[uint32]uint32) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Fixed32Fixed32Entry(mp map[uint32]uint32) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -214,8 +214,8 @@ func UnmarshalMaps_Fixed32Fixed32Entry(v interface{}) (mp map[uint32]uint32, err
 	}
 }
 
-func MarshalMaps_Fixed64Fixed64Entry(mp map[uint64]uint64) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Fixed64Fixed64Entry(mp map[uint64]uint64) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -236,8 +236,8 @@ func UnmarshalMaps_Fixed64Fixed64Entry(v interface{}) (mp map[uint64]uint64, err
 	}
 }
 
-func MarshalMaps_Sfixed32Sfixed32Entry(mp map[int32]int32) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Sfixed32Sfixed32Entry(mp map[int32]int32) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -258,8 +258,8 @@ func UnmarshalMaps_Sfixed32Sfixed32Entry(v interface{}) (mp map[int32]int32, err
 	}
 }
 
-func MarshalMaps_Sfixed64Sfixed64Entry(mp map[int64]int64) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_Sfixed64Sfixed64Entry(mp map[int64]int64) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -280,8 +280,8 @@ func UnmarshalMaps_Sfixed64Sfixed64Entry(v interface{}) (mp map[int64]int64, err
 	}
 }
 
-func MarshalMaps_BoolBoolEntry(mp map[bool]bool) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_BoolBoolEntry(mp map[bool]bool) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -302,8 +302,8 @@ func UnmarshalMaps_BoolBoolEntry(v interface{}) (mp map[bool]bool, err error) {
 	}
 }
 
-func MarshalMaps_StringStringEntry(mp map[string]string) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_StringStringEntry(mp map[string]string) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -324,8 +324,8 @@ func UnmarshalMaps_StringStringEntry(v interface{}) (mp map[string]string, err e
 	}
 }
 
-func MarshalMaps_StringBytesEntry(mp map[string][]byte) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_StringBytesEntry(mp map[string][]byte) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -346,8 +346,8 @@ func UnmarshalMaps_StringBytesEntry(v interface{}) (mp map[string][]byte, err er
 	}
 }
 
-func MarshalMaps_StringFloatEntry(mp map[string]float32) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_StringFloatEntry(mp map[string]float32) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -368,8 +368,8 @@ func UnmarshalMaps_StringFloatEntry(v interface{}) (mp map[string]float32, err e
 	}
 }
 
-func MarshalMaps_StringDoubleEntry(mp map[string]float64) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_StringDoubleEntry(mp map[string]float64) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -390,8 +390,8 @@ func UnmarshalMaps_StringDoubleEntry(v interface{}) (mp map[string]float64, err 
 	}
 }
 
-func MarshalMaps_StringFooEntry(mp map[string]*Foo) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_StringFooEntry(mp map[string]*Foo) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")
@@ -412,8 +412,8 @@ func UnmarshalMaps_StringFooEntry(v interface{}) (mp map[string]*Foo, err error)
 	}
 }
 
-func MarshalMaps_StringBarEntry(mp map[string]Bar) github_com_99designs_gqlgen_graphql.Marshaler {
-	return github_com_99designs_gqlgen_graphql.WriterFunc(func(w io.Writer) {
+func MarshalMaps_StringBarEntry(mp map[string]Bar) github_com_danielvladco_go_proto_gql_gqltypes.Marshaler {
+	return github_com_danielvladco_go_proto_gql_gqltypes.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
 			panic("stupid map")

@@ -20,8 +20,9 @@ extend google.protobuf.FieldOptions {
 }
 
 message Field {
-    optional string params = 1;
-    optional string dirs = 2;
+    optional bool required = 1;
+    optional string params = 2;
+    optional string dirs = 3;
 }
 
 enum Type {

@@ -3,7 +3,6 @@ package pb;
 option go_package = "github.com/danielvladco/go-proto-gql/example;pb";
 
 import "gql.proto";
-import "github.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto";
 
 service Service {
     rpc Mutate1 (Data) returns (Data); // must be a mutation
@@ -41,9 +40,9 @@ service Query {
 }
 
 message Data {
-    string string = 1 [(validator.field) = {string_not_empty: true}]; // must be required
-    Foo2 foo = 2 [(validator.field) = {msg_exists: true}]; // must be required
-    repeated float float = 3 [(validator.field) = {repeated_count_min: 1}]; // must be required because its greater than 0
+    string string = 1 [(gql.field) = {required: true}]; // must be required
+    Foo2 foo = 2 [(gql.field) = {required: true}]; // must be required
+    repeated float float = 3 [(gql.field) = {required: true}]; // must be required because its greater than 0
     string string2 = 4; // simple
     Foo2 foo2 = 5; // simple
     repeated float float2 = 6; // simple

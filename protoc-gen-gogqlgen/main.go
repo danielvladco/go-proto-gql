@@ -94,7 +94,7 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	p.PluginImports = generator.NewPluginImports(p.Generator)
 	p.fmtPkg = p.NewImport("fmt")
 	p.ioPkg = p.NewImport("io")
-	p.graphqlPkg = p.NewImport("github.com/99designs/gqlgen/graphql")
+	p.graphqlPkg = p.NewImport("github.com/danielvladco/go-proto-gql/gqltypes")
 	p.jsonPkg = p.NewImport("encoding/json")
 	p.contextPkg = p.NewImport("context")
 

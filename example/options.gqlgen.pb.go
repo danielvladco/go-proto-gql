@@ -8,7 +8,6 @@ import (
 	fmt "fmt"
 	_ "github.com/danielvladco/go-proto-gql"
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/mwitkow/go-proto-validators"
 	math "math"
 )
 

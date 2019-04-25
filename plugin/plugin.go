@@ -2,9 +2,8 @@ package plugin
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/pkg/errors"
 	"log"
 	"os"
 	"reflect"
@@ -15,7 +14,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
+	"github.com/gogo/protobuf/types"
 	golangproto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -112,7 +113,7 @@ func (p *Plugin) IsAny(typeName string) (ok bool) {
 			return ok
 		}
 
-		_, ok = reflect.New(messageType).Elem().Interface().(*any.Any)
+		_, ok = reflect.New(messageType).Elem().Interface().(*types.Any)
 		return ok
 	}
 
@@ -193,8 +194,8 @@ func (p *Plugin) getImportPath(file *descriptor.FileDescriptorProto) string {
 		return strings.Join(fileName[:len(fileName)-1], "/")
 	}
 
-	p.Error(fmt.Errorf("go import path for %s could not be resolved correctly: use option go_package with full package name in this file", file.GetName()))
-	return "."
+	p.Warn(fmt.Errorf("go import path for %s could not be resolved correctly: use option go_package with full package name in this file", file.GetName()))
+	return file.GetName()
 }
 
 func (p *Plugin) getEnumType(file *descriptor.FileDescriptorProto, typeName string) *Type {

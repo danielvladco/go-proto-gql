@@ -7,18 +7,7 @@ import (
 	"github.com/danielvladco/go-proto-gql"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"github.com/mwitkow/go-proto-validators"
 )
-
-func getValidatorType(field *descriptor.FieldDescriptorProto) *validator.FieldValidator {
-	if field.Options != nil {
-		v, err := proto.GetExtension(field.Options, validator.E_Field)
-		if err == nil && v.(*validator.FieldValidator) != nil {
-			return v.(*validator.FieldValidator)
-		}
-	}
-	return nil
-}
 
 func getEnum(file *descriptor.FileDescriptorProto, typeName string) *descriptor.EnumDescriptorProto {
 	for _, enum := range file.GetEnumType() {
@@ -51,15 +40,8 @@ func getNestedEnum(file *descriptor.FileDescriptorProto, msg *descriptor.Descrip
 }
 
 func resolveRequired(field *descriptor.FieldDescriptorProto) bool {
-	if v := getValidatorType(field); v != nil {
-		switch {
-		case v.GetMsgExists():
-			return true
-		case v.GetStringNotEmpty():
-			return true
-		case v.GetRepeatedCountMin() > 0:
-			return true
-		}
+	if v := GetGqlFieldOptions(field); v != nil {
+		return v.GetRequired()
 	}
 	return false
 }
