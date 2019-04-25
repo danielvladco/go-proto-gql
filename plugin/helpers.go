@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/danielvladco/go-proto-gql"
+	"github.com/danielvladco/go-proto-gql/pb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 )
