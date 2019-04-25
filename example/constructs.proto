@@ -16,6 +16,7 @@ service Constructs {
     rpc Empty3_ (Empty3) returns (Empty3); // messages with all empty fields
     rpc Ref_ (Ref) returns (Ref);
     rpc Oneof_ (Oneof) returns (Oneof);
+    rpc CallWithId (Empty) returns (Empty);
 }
 
 message Empty3 {

@@ -26,34 +26,38 @@ var _ = math.Inf
 type ConstructsGQLServer struct{ Service ConstructsServer }
 
 func (s *ConstructsGQLServer) ConstructsScalars(ctx context.Context, in *Scalars) (*Scalars, error) {
-	return s.svc.Scalars_(ctx, in)
+	return s.Service.Scalars_(ctx, in)
 }
 func (s *ConstructsGQLServer) ConstructsRepeated(ctx context.Context, in *Repeated) (*Repeated, error) {
-	return s.svc.Repeated_(ctx, in)
+	return s.Service.Repeated_(ctx, in)
 }
 func (s *ConstructsGQLServer) ConstructsMaps(ctx context.Context, in *Maps) (*Maps, error) {
-	return s.svc.Maps_(ctx, in)
+	return s.Service.Maps_(ctx, in)
 }
 func (s *ConstructsGQLServer) ConstructsAny(ctx context.Context, in *github_com_golang_protobuf_ptypes_any.Any) (*Any, error) {
-	return s.svc.Any_(ctx, in)
+	return s.Service.Any_(ctx, in)
 }
 func (s *ConstructsGQLServer) ConstructsEmpty(ctx context.Context) (*bool, error) {
-	_, err := s.svc.Empty_(ctx, &github_com_golang_protobuf_ptypes_empty.Empty{})
+	_, err := s.Service.Empty_(ctx, &github_com_golang_protobuf_ptypes_empty.Empty{})
 	return nil, err
 }
 func (s *ConstructsGQLServer) ConstructsEmpty2(ctx context.Context) (*bool, error) {
-	_, err := s.svc.Empty2_(ctx, &EmptyRecursive{})
+	_, err := s.Service.Empty2_(ctx, &EmptyRecursive{})
 	return nil, err
 }
 func (s *ConstructsGQLServer) ConstructsEmpty3(ctx context.Context) (*bool, error) {
-	_, err := s.svc.Empty3_(ctx, &Empty3{})
+	_, err := s.Service.Empty3_(ctx, &Empty3{})
 	return nil, err
 }
 func (s *ConstructsGQLServer) ConstructsRef(ctx context.Context, in *Ref) (*Ref, error) {
-	return s.svc.Ref_(ctx, in)
+	return s.Service.Ref_(ctx, in)
 }
 func (s *ConstructsGQLServer) ConstructsOneof(ctx context.Context, in *Oneof) (*Oneof, error) {
-	return s.svc.Oneof_(ctx, in)
+	return s.Service.Oneof_(ctx, in)
+}
+func (s *ConstructsGQLServer) ConstructsCallWithID(ctx context.Context) (*bool, error) {
+	_, err := s.Service.CallWithId(ctx, &Empty{})
+	return nil, err
 }
 
 func MarshalMaps_Int32Int32Entry(mp map[int32]int32) github_com_99designs_gqlgen_graphql.Marshaler {

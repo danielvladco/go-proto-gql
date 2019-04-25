@@ -20,47 +20,23 @@ var _ = math.Inf
 type ServiceGQLServer struct{ Service ServiceServer }
 
 func (s *ServiceGQLServer) ServiceMutate1(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Mutate1(ctx, in)
+	return s.Service.Mutate1(ctx, in)
 }
 func (s *ServiceGQLServer) ServiceMutate2(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Mutate2(ctx, in)
+	return s.Service.Mutate2(ctx, in)
 }
 func (s *ServiceGQLServer) ServiceQuery1(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Query1(ctx, in)
-}
-func (s *ServiceGQLServer) ServicePublish(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Publish(ctx, in)
-}
-func (s *ServiceGQLServer) ServiceSubscribe(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Subscribe(ctx, in)
-}
-func (s *ServiceGQLServer) ServicePubSub1(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.PubSub1(ctx, in)
-}
-func (s *ServiceGQLServer) ServiceInvalidSubscribe1(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.InvalidSubscribe1(ctx, in)
-}
-func (s *ServiceGQLServer) ServiceInvalidSubscribe2(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.InvalidSubscribe2(ctx, in)
-}
-func (s *ServiceGQLServer) ServiceInvalidSubscribe3(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.InvalidSubscribe3(ctx, in)
-}
-func (s *ServiceGQLServer) ServicePubSub2(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.PubSub2(ctx, in)
+	return s.Service.Query1(ctx, in)
 }
 
 type QueryGQLServer struct{ Service QueryServer }
 
 func (s *QueryGQLServer) QueryQuery1(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Query1(ctx, in)
+	return s.Service.Query1(ctx, in)
 }
 func (s *QueryGQLServer) QueryQuery2(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Query2(ctx, in)
+	return s.Service.Query2(ctx, in)
 }
 func (s *QueryGQLServer) QueryMutate1(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Mutate1(ctx, in)
-}
-func (s *QueryGQLServer) QuerySubscribe(ctx context.Context, in *Data) (*Data, error) {
-	return s.svc.Subscribe(ctx, in)
+	return s.Service.Mutate1(ctx, in)
 }
