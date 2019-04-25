@@ -1,4 +1,4 @@
-package gqltypes
+package gql
 
 import (
 	"context"
@@ -58,6 +58,46 @@ func UnmarshalAny(v interface{}) (any.Any, error) {
 		return any.Any{}, nil
 	default:
 		return any.Any{}, fmt.Errorf("%T is not json.RawMessage", v)
+	}
+}
+
+func MarshalInt32(any int32) Marshaler {
+	return WriterFunc(func(w io.Writer) {
+		_, _ = w.Write([]byte(strconv.Itoa(int(any))))
+	})
+}
+
+func UnmarshalInt32(v interface{}) (int32, error) {
+	switch v := v.(type) {
+	case int:
+		return int32(v), nil
+	case int32:
+		return v, nil
+	case json.Number:
+		i, err := v.Int64()
+		return int32(i), err
+	default:
+		return 0, fmt.Errorf("%T is not int32", v)
+	}
+}
+
+func MarshalInt64(any int64) Marshaler {
+	return WriterFunc(func(w io.Writer) {
+		_, _ = w.Write([]byte(strconv.Itoa(int(any))))
+	})
+}
+
+func UnmarshalInt64(v interface{}) (int64, error) {
+	switch v := v.(type) {
+	case int:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case json.Number:
+		i, err := v.Int64()
+		return i, err
+	default:
+		return 0, fmt.Errorf("%T is not int32", v)
 	}
 }
 

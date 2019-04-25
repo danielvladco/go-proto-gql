@@ -285,7 +285,7 @@ func (p *Plugin) getMessageType(file *descriptor.FileDescriptorProto, typeName s
 			// Any is considered to be scalar
 			if p.IsAny(typeName) {
 				p.scalars[typeName] = &Type{ModelDescriptor: ModelDescriptor{
-					PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", //TODO generate gqlgen.yml
+					PackageDir: "github.com/danielvladco/go-proto-gql/pb", //TODO generate gqlgen.yml
 					TypeName:   ScalarAny,
 				}}
 				return nil
@@ -330,28 +330,28 @@ func (p *Plugin) fillTypeMap(typeName string, objects map[string]*Type, inputFie
 				// defines scalars for unsupported graphql types
 				switch *field.Type {
 				case descriptor.FieldDescriptorProto_TYPE_BYTES:
-					p.scalars[ScalarBytes] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarBytes}}
+					p.scalars[ScalarBytes] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/pb", TypeName: ScalarBytes}}
 
 				case descriptor.FieldDescriptorProto_TYPE_FLOAT:
-					p.scalars[ScalarFloat32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarFloat32}}
+					p.scalars[ScalarFloat32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/pb", TypeName: ScalarFloat32}}
 
 				case descriptor.FieldDescriptorProto_TYPE_INT64,
 					descriptor.FieldDescriptorProto_TYPE_SINT64,
 					descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-					p.scalars[ScalarInt64] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarInt64}}
+					p.scalars[ScalarInt64] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/pb", TypeName: ScalarInt64}}
 
 				case descriptor.FieldDescriptorProto_TYPE_INT32,
 					descriptor.FieldDescriptorProto_TYPE_SINT32,
 					descriptor.FieldDescriptorProto_TYPE_SFIXED32:
-					p.scalars[ScalarInt32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarInt32}}
+					p.scalars[ScalarInt32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/pb", TypeName: ScalarInt32}}
 
 				case descriptor.FieldDescriptorProto_TYPE_UINT32,
 					descriptor.FieldDescriptorProto_TYPE_FIXED32:
-					p.scalars[ScalarUint32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarUint32}}
+					p.scalars[ScalarUint32] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/pb", TypeName: ScalarUint32}}
 
 				case descriptor.FieldDescriptorProto_TYPE_UINT64,
 					descriptor.FieldDescriptorProto_TYPE_FIXED64:
-					p.scalars[ScalarUint64] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/gqltypes", TypeName: ScalarUint64}}
+					p.scalars[ScalarUint64] = &Type{ModelDescriptor: ModelDescriptor{PackageDir: "github.com/danielvladco/go-proto-gql/pb", TypeName: ScalarUint64}}
 				}
 
 				if !field.IsMessage() && !field.IsEnum() {
