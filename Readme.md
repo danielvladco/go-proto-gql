@@ -13,9 +13,9 @@ Install:
 -
 
 ```sh
-go get github.com/danielvladco/go-proto-gql
 go install github.com/danielvladco/go-proto-gql/protoc-gen-gql
 go install github.com/danielvladco/go-proto-gql/protoc-gen-gogqlgen
+go install github.com/danielvladco/go-proto-gql/protoc-gen-gqlgencfg
 ```
 
 Usage Examples:

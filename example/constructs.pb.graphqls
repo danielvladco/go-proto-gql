@@ -340,9 +340,15 @@ type pb_Timestamp {
 
 union IsOneof_Oneof1 = Oneof_Param2 | Oneof_Param3
 
-union IsOneof_Oneof2 = Oneof_Param4 | Oneof_Param5
+union IsOneof_Oneof2 = Oneof_Param5 | Oneof_Param4
 
 union IsOneof_Oneof3 = Oneof_Param6
+
+enum Bar {
+	BAR1
+	BAR2
+	BAR3
+}
 
 enum Ref_Foo_En {
 	A0
@@ -352,12 +358,6 @@ enum Ref_Foo_En {
 enum Ref_Foo_Bar_En {
 	A0
 	A1
-}
-
-enum Bar {
-	BAR1
-	BAR2
-	BAR3
 }
 
 type Mutation {
