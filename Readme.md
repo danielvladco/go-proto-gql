@@ -66,6 +66,9 @@ TODO:
 ## Community:
 I am one on this. Will be very glad for any contributions so feel free to create issues and forks.
 
+## NOTE
+This is an experimental project and is not yet ready for production use. There still may be usecases that I didn't cover and tested in a production ready environment. So use it at your own risk ;)
+
 ## License:
 
 `go-proto-gql` is released under the Apache 2.0 license. See the LICENSE file for details.
