@@ -214,7 +214,7 @@ func (p *Plugin) getEnumType(file *descriptor.FileDescriptorProto, typeName stri
 	return nil
 }
 
-// recursively passes trough all fields of a all types from a given map and completes it with missing types that ar user as fields
+// recursively goes trough all fields of the types from messages map and fills it with child types.
 // i. e. if message Type1 { Type2: field1 = 1; } exists in the map this function will look up Type2 and add Type2 to the map as well
 func (p *Plugin) FillTypeMap(typeName string, messages map[string]*Type, inputField bool) {
 	p.fillTypeMap(typeName, messages, inputField, NewCallstack())
