@@ -12,7 +12,7 @@ example:
 	Mgithub.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto=github.com/mwitkow/go-proto-validators,\
 	plugins=grpc,paths=source_relative:. \
 	--gqlgencfg_out=paths=source_relative:. \
-	--gql_out=paths=source_relative:. \
+	--gql_out=svcdir=true,paths=source_relative:. \
 	--gogqlgen_out=\
 	Mgithub.com/mwitkow/go-proto-validators@v0.0.0-20180403085117-0950a7990007/validator.proto=github.com/mwitkow/go-proto-validators,\
 	paths=source_relative,\

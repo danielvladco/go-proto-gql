@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"strings"
 	"unicode"
 
@@ -61,4 +62,20 @@ func GetGqlFieldOptions(field *descriptor.FieldDescriptorProto) *gql.Field {
 		}
 	}
 	return nil
+}
+
+// Match parsing algorithm from Generator.CommandLineParameters
+func Params(gen *generator.Generator) map[string]string {
+	params := make(map[string]string)
+
+	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {
+		kvp := strings.SplitN(parameter, "=", 2)
+		if len(kvp) != 2 {
+			continue
+		}
+
+		params[kvp[0]] = kvp[1]
+	}
+
+	return params
 }

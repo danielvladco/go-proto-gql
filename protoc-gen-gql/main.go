@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 
 	. "github.com/danielvladco/go-proto-gql/plugin"
@@ -23,7 +25,12 @@ func main() {
 		gen.Error(err, "parsing input proto")
 	}
 
-	p := &plugin{NewPlugin()}
+	serviceDirectives, err := strconv.ParseBool(Params(gen)["svcdir"])
+	if err != nil {
+		gen.Error(err, "parsing svcdir option")
+	}
+
+	p := &plugin{NewPlugin(), serviceDirectives}
 
 	gen.CommandLineParameters(gen.Request.GetParameter())
 	gen.WrapTypes()
@@ -49,6 +56,7 @@ func main() {
 
 type plugin struct {
 	*Plugin
+	serviceDirectives bool
 }
 
 func (p *plugin) GenerateImports(file *generator.FileDescriptor) {}
@@ -71,7 +79,14 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 	// TODO: add comments from proto to gql for documentation purposes to all elements. Currently are supported only a few
 
 	if len(p.Oneofs()) > 0 {
-		p.P("directive @oneof(name: String) on FIELD_DEFINITION\n")
+		p.P("directive @oneof(name: String) on INPUT_FIELD_DEFINITION\n")
+	}
+
+	// Define a directive for each service, useful for service specific middleware
+	if p.serviceDirectives {
+		for _, svc := range file.Service {
+			p.P("directive @", svc.GetName(), "(name: String) on FIELD_DEFINITION\n")
+		}
 	}
 
 	// scalars
@@ -174,12 +189,15 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 			for typeName := range oneof.OneofTypes {
 				ss = append(ss, p.GqlModelNames()[p.Types()[typeName]])
 			}
-			return
+
+			sort.Sort(sort.StringSlice(ss))
+			return ss
 		}(), " | "), "\n")
 	}
 
 	// render enums
-	for _, e := range p.Enums() {
+	for _, entry := range TypeMap2List(p.Enums()) {
+		e := entry.Value
 		p.P("enum ", p.GqlModelNames()[e], " {")
 		p.In()
 		for _, v := range e.GetValue() {
@@ -242,6 +260,11 @@ func (p *plugin) renderMethod(methods []*Method) {
 		if m.Phony {
 			p.P("# See the Subscription with the same name")
 		}
-		p.P(m.Name, in, ": ", out)
+		// Define a directive for each service, useful for service specific middleware
+		serviceDirective := ""
+		if p.serviceDirectives {
+			serviceDirective = " @" + m.ServiceDescriptorProto.GetName()
+		}
+		p.P(m.Name, in, ": ", out, serviceDirective)
 	}
 }

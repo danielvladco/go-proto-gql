@@ -64,7 +64,7 @@ func MarshalMaps_Int32Int32Entry(mp map[int32]int32) github_com_danielvladco_go_
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -86,7 +86,7 @@ func MarshalMaps_Int64Int64Entry(mp map[int64]int64) github_com_danielvladco_go_
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -108,7 +108,7 @@ func MarshalMaps_Uint32Uint32Entry(mp map[uint32]uint32) github_com_danielvladco
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -130,7 +130,7 @@ func MarshalMaps_Uint64Uint64Entry(mp map[uint64]uint64) github_com_danielvladco
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -152,7 +152,7 @@ func MarshalMaps_Sint32Sint32Entry(mp map[int32]int32) github_com_danielvladco_g
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -174,7 +174,7 @@ func MarshalMaps_Sint64Sint64Entry(mp map[int64]int64) github_com_danielvladco_g
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -196,7 +196,7 @@ func MarshalMaps_Fixed32Fixed32Entry(mp map[uint32]uint32) github_com_danielvlad
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -218,7 +218,7 @@ func MarshalMaps_Fixed64Fixed64Entry(mp map[uint64]uint64) github_com_danielvlad
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -240,7 +240,7 @@ func MarshalMaps_Sfixed32Sfixed32Entry(mp map[int32]int32) github_com_danielvlad
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -262,7 +262,7 @@ func MarshalMaps_Sfixed64Sfixed64Entry(mp map[int64]int64) github_com_danielvlad
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -284,7 +284,7 @@ func MarshalMaps_BoolBoolEntry(mp map[bool]bool) github_com_danielvladco_go_prot
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -306,7 +306,7 @@ func MarshalMaps_StringStringEntry(mp map[string]string) github_com_danielvladco
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -328,7 +328,7 @@ func MarshalMaps_StringBytesEntry(mp map[string][]byte) github_com_danielvladco_
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -350,7 +350,7 @@ func MarshalMaps_StringFloatEntry(mp map[string]float32) github_com_danielvladco
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -372,7 +372,7 @@ func MarshalMaps_StringDoubleEntry(mp map[string]float64) github_com_danielvladc
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -394,7 +394,7 @@ func MarshalMaps_StringFooEntry(mp map[string]*Foo) github_com_danielvladco_go_p
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }
@@ -416,7 +416,7 @@ func MarshalMaps_StringBarEntry(mp map[string]Bar) github_com_danielvladco_go_pr
 	return github_com_danielvladco_go_proto_gql_pb.WriterFunc(func(w io.Writer) {
 		err := encoding_json.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }

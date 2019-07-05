@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	gqlplugin "github.com/danielvladco/go-proto-gql/plugin"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 
+	gqlplugin "github.com/danielvladco/go-proto-gql/plugin"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/gogo/protobuf/vanity"
@@ -29,18 +29,9 @@ func main() {
 		gen.Fail("no files to generate")
 	}
 
-	useGogoImport := false
-	// Match parsing algorithm from Generator.CommandLineParameters
-	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {
-		kvp := strings.SplitN(parameter, "=", 2)
-		// We only care about key-value pairs where the key is "gogoimport"
-		if len(kvp) != 2 || kvp[0] != "gogoimport" {
-			continue
-		}
-		useGogoImport, err = strconv.ParseBool(kvp[1])
-		if err != nil {
-			gen.Error(err, "parsing gogoimport option")
-		}
+	useGogoImport, err := strconv.ParseBool(gqlplugin.Params(gen)["gogoimport"])
+	if err != nil {
+		gen.Error(err, "parsing gogoimport option")
 	}
 
 	gen.CommandLineParameters(gen.Request.GetParameter())
@@ -147,7 +138,7 @@ func Marshal`, mapName, `(mp `, mapType, `) `, p.graphqlPkg.Use(), `.Marshaler {
 	return `, p.graphqlPkg.Use(), `.WriterFunc(func(w `, p.ioPkg.Use(), `.Writer) {
 		err := `, p.jsonPkg.Use(), `.NewEncoder(w).Encode(mp)
 		if err != nil {
-			panic("stupid map")
+			panic("this map type is not supported")
 		}
 	})
 }

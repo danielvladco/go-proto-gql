@@ -557,17 +557,25 @@ func (p *Plugin) defineMethods(file *generator.FileDescriptor) {
 	for svci, svc := range file.GetService() {
 		for rpci, rpc := range svc.GetMethod() {
 			m := &Method{
-				Name:         ToLowerFirst(svc.GetName()) + strings.Title(rpc.GetName()),
-				InputType:    rpc.GetInputType(),
-				OutputType:   rpc.GetOutputType(),
-				ServiceIndex: svci, Index: rpci,
+				Name:                   ToLowerFirst(svc.GetName()) + strings.Title(rpc.GetName()),
+				InputType:              rpc.GetInputType(),
+				OutputType:             rpc.GetOutputType(),
+				ServiceIndex:           svci,
+				Index:                  rpci,
+				MethodDescriptorProto:  rpc,
+				ServiceDescriptorProto: svc,
 			}
 
 			if rpc.GetClientStreaming() && rpc.GetServerStreaming() {
 				p.mutations = append(p.mutations, &Method{
-					Name:       ToLowerFirst(svc.GetName()) + strings.Title(rpc.GetName()),
-					InputType:  rpc.GetInputType(),
-					OutputType: "", Phony: true, ServiceIndex: svci, Index: rpci,
+					Name:                   ToLowerFirst(svc.GetName()) + strings.Title(rpc.GetName()),
+					InputType:              rpc.GetInputType(),
+					OutputType:             "",
+					Phony:                  true,
+					ServiceIndex:           svci,
+					Index:                  rpci,
+					MethodDescriptorProto:  rpc,
+					ServiceDescriptorProto: svc,
 				})
 			}
 

@@ -25,6 +25,9 @@ type Method struct {
 	Phony        bool
 	ServiceIndex int
 	Index        int
+
+	*descriptor.MethodDescriptorProto
+	*descriptor.ServiceDescriptorProto
 }
 
 type Methods []*Method
