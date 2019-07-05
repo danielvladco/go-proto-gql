@@ -25,9 +25,12 @@ func main() {
 		gen.Error(err, "parsing input proto")
 	}
 
-	serviceDirectives, err := strconv.ParseBool(Params(gen)["svcdir"])
-	if err != nil {
-		gen.Error(err, "parsing svcdir option")
+	serviceDirectives := false
+	if gogoimport, ok := Params(gen)["svcdir"]; ok {
+		serviceDirectives, err = strconv.ParseBool(gogoimport)
+		if err != nil {
+			gen.Error(err, "parsing svcdir option")
+		}
 	}
 
 	p := &plugin{NewPlugin(), serviceDirectives}

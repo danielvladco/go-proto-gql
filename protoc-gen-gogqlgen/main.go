@@ -29,9 +29,12 @@ func main() {
 		gen.Fail("no files to generate")
 	}
 
-	useGogoImport, err := strconv.ParseBool(gqlplugin.Params(gen)["gogoimport"])
-	if err != nil {
-		gen.Error(err, "parsing gogoimport option")
+	useGogoImport := false
+	if gogoimport, ok := gqlplugin.Params(gen)["gogoimport"]; ok {
+		useGogoImport, err = strconv.ParseBool(gogoimport)
+		if err != nil {
+			gen.Error(err, "parsing gogoimport option")
+		}
 	}
 
 	gen.CommandLineParameters(gen.Request.GetParameter())
