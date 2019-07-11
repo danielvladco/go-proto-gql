@@ -103,7 +103,15 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 						continue
 					}
 					methodName := strings.Replace(generator.CamelCase(svc.GetName()+rpc.GetName()), "_", "", -1)
-					methodName = strings.Replace(methodName, "Id", "ID", -1)
+					methodNameSplit := gqlplugin.SplitCamelCase(methodName)
+					var methodNameSplitNew []string
+					for _, m := range methodNameSplit {
+						if m == "id" || m == "Id" {
+							m = "ID"
+						}
+						methodNameSplitNew = append(methodNameSplitNew, m)
+					}
+					methodName = strings.Join(methodNameSplitNew, "")
 
 					typeInObj := p.TypeNameByObject(rpc.GetInputType())
 					p.NewImport(string(typeInObj.GoImportPath()))
