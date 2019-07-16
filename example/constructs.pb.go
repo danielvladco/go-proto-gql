@@ -11,6 +11,8 @@ import (
 	empty "github.com/golang/protobuf/ptypes/empty"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -1863,6 +1865,41 @@ type ConstructsServer interface {
 	Ref_(context.Context, *Ref) (*Ref, error)
 	Oneof_(context.Context, *Oneof) (*Oneof, error)
 	CallWithId(context.Context, *Empty) (*Empty, error)
+}
+
+// UnimplementedConstructsServer can be embedded to have forward compatible implementations.
+type UnimplementedConstructsServer struct {
+}
+
+func (*UnimplementedConstructsServer) Scalars_(ctx context.Context, req *Scalars) (*Scalars, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Scalars_ not implemented")
+}
+func (*UnimplementedConstructsServer) Repeated_(ctx context.Context, req *Repeated) (*Repeated, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Repeated_ not implemented")
+}
+func (*UnimplementedConstructsServer) Maps_(ctx context.Context, req *Maps) (*Maps, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Maps_ not implemented")
+}
+func (*UnimplementedConstructsServer) Any_(ctx context.Context, req *any.Any) (*Any, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Any_ not implemented")
+}
+func (*UnimplementedConstructsServer) Empty_(ctx context.Context, req *empty.Empty) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Empty_ not implemented")
+}
+func (*UnimplementedConstructsServer) Empty2_(ctx context.Context, req *EmptyRecursive) (*EmptyNested, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Empty2_ not implemented")
+}
+func (*UnimplementedConstructsServer) Empty3_(ctx context.Context, req *Empty3) (*Empty3, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Empty3_ not implemented")
+}
+func (*UnimplementedConstructsServer) Ref_(ctx context.Context, req *Ref) (*Ref, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ref_ not implemented")
+}
+func (*UnimplementedConstructsServer) Oneof_(ctx context.Context, req *Oneof) (*Oneof, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Oneof_ not implemented")
+}
+func (*UnimplementedConstructsServer) CallWithId(ctx context.Context, req *Empty) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CallWithId not implemented")
 }
 
 func RegisterConstructsServer(s *grpc.Server, srv ConstructsServer) {

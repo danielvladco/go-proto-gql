@@ -415,8 +415,6 @@ func (p *Plugin) getMethodType(rpc *descriptor.MethodDescriptorProto) gql.Type {
 			if tt != nil {
 				return *tt
 			}
-		} else {
-			p.Error(err)
 		}
 	}
 
@@ -431,8 +429,6 @@ func (p *Plugin) getServiceType(svc *descriptor.ServiceDescriptorProto) gql.Type
 			if tt != nil {
 				return *tt
 			}
-		} else {
-			p.Error(err)
 		}
 	}
 

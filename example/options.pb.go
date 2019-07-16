@@ -9,6 +9,8 @@ import (
 	_ "github.com/danielvladco/go-proto-gql/pb"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -476,6 +478,41 @@ type ServiceServer interface {
 	PubSub2(Service_PubSub2Server) error
 }
 
+// UnimplementedServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedServiceServer struct {
+}
+
+func (*UnimplementedServiceServer) Mutate1(ctx context.Context, req *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Mutate1 not implemented")
+}
+func (*UnimplementedServiceServer) Mutate2(ctx context.Context, req *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Mutate2 not implemented")
+}
+func (*UnimplementedServiceServer) Query1(ctx context.Context, req *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query1 not implemented")
+}
+func (*UnimplementedServiceServer) Publish(srv Service_PublishServer) error {
+	return status.Errorf(codes.Unimplemented, "method Publish not implemented")
+}
+func (*UnimplementedServiceServer) Subscribe(req *Data, srv Service_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+}
+func (*UnimplementedServiceServer) PubSub1(srv Service_PubSub1Server) error {
+	return status.Errorf(codes.Unimplemented, "method PubSub1 not implemented")
+}
+func (*UnimplementedServiceServer) InvalidSubscribe1(srv Service_InvalidSubscribe1Server) error {
+	return status.Errorf(codes.Unimplemented, "method InvalidSubscribe1 not implemented")
+}
+func (*UnimplementedServiceServer) InvalidSubscribe2(req *Data, srv Service_InvalidSubscribe2Server) error {
+	return status.Errorf(codes.Unimplemented, "method InvalidSubscribe2 not implemented")
+}
+func (*UnimplementedServiceServer) InvalidSubscribe3(srv Service_InvalidSubscribe3Server) error {
+	return status.Errorf(codes.Unimplemented, "method InvalidSubscribe3 not implemented")
+}
+func (*UnimplementedServiceServer) PubSub2(srv Service_PubSub2Server) error {
+	return status.Errorf(codes.Unimplemented, "method PubSub2 not implemented")
+}
+
 func RegisterServiceServer(s *grpc.Server, srv ServiceServer) {
 	s.RegisterService(&_Service_serviceDesc, srv)
 }
@@ -849,6 +886,23 @@ type QueryServer interface {
 	Query2(context.Context, *Data) (*Data, error)
 	Mutate1(context.Context, *Data) (*Data, error)
 	Subscribe(*Data, Query_SubscribeServer) error
+}
+
+// UnimplementedQueryServer can be embedded to have forward compatible implementations.
+type UnimplementedQueryServer struct {
+}
+
+func (*UnimplementedQueryServer) Query1(ctx context.Context, req *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query1 not implemented")
+}
+func (*UnimplementedQueryServer) Query2(ctx context.Context, req *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query2 not implemented")
+}
+func (*UnimplementedQueryServer) Mutate1(ctx context.Context, req *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Mutate1 not implemented")
+}
+func (*UnimplementedQueryServer) Subscribe(req *Data, srv Query_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
 
 func RegisterQueryServer(s *grpc.Server, srv QueryServer) {
