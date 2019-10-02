@@ -1,9 +1,8 @@
 .PHONY: install example
 
 install:
-	go install github.com/gogo/protobuf/protoc-gen-gogo
-	protoc --gogo_out=paths=source_relative,Mgoogle/protobuf/descriptor.proto=github.com/gogo/protobuf/protoc-gen-gogo/descriptor:./pb \
-    	-I=${GOPATH}/pkg/mod/ -I=./pb ./pb/*.proto
+	go install github.com/golang/protobuf/protoc-gen-go
+	protoc --go_out=paths=source_relative:./pb -I=./pb ./pb/*.proto
 	go install ./protoc-gen-gql
 	go install ./protoc-gen-gogqlgen
 	go install ./protoc-gen-gqlgencfg

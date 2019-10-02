@@ -3,7 +3,7 @@ package plugin
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
 type ModelDescriptor struct {
@@ -13,6 +13,7 @@ type ModelDescriptor struct {
 	UsedAsInput bool
 	Index       int
 	OneofTypes  map[string]struct{}
+	Phony       bool
 
 	packageName     string
 	originalPackage string
