@@ -549,7 +549,7 @@ func (p *Plugin) GqlModelNames() map[*Type]string {
 	return p.gqlModelNames[p.fileIndex]
 }
 
-func (p *Plugin) defineMethods(file *generator.FileDescriptor) {
+func (p *Plugin) defineMethods(file *descriptor.FileDescriptorProto) {
 	for svci, svc := range file.GetService() {
 		for rpci, rpc := range svc.GetMethod() {
 			m := &Method{
@@ -599,7 +599,7 @@ func (p *Plugin) defineMethods(file *generator.FileDescriptor) {
 	}
 }
 
-func (p *Plugin) InitFile(file *generator.FileDescriptor) {
+func (p *Plugin) InitFile(file *descriptor.FileDescriptorProto) {
 	p.fileIndex++
 	p.schemas = append(p.schemas, &schema{buffer: &bytes.Buffer{}})
 	p.gqlModelNames = append(p.gqlModelNames, make(map[*Type]string))
