@@ -232,7 +232,9 @@ func (p *Plugin) createOneofFromParent(name string, parent *Type, callstack Call
 	oneofName := ""
 	for _, typeName := range callstack.List() {
 		oneofName += "."
-		oneofName += objects[typeName].DescriptorProto.GetName()
+		if objects[typeName] != nil {
+			oneofName += objects[typeName].DescriptorProto.GetName()
+		}
 	}
 
 	// the name of the generated type

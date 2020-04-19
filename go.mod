@@ -1,5 +1,7 @@
 module github.com/danielvladco/go-proto-gql
 
+go 1.14
+
 require (
 	github.com/danielvladco/go-proto-gql/pb v0.6.0
 	github.com/gogo/protobuf v1.2.1
