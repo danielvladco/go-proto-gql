@@ -25,7 +25,19 @@ func main() {
 		gen.Error(err, "parsing input proto")
 	}
 
-	p := &plugin{Plugin: NewPlugin()}
+	gendir := ""
+	if prefix, ok := Params(gen)["gendir"]; ok {
+		gendir = prefix
+	}
+	idlPrefix := ""
+	if prefix, ok := Params(gen)["idlprefix"]; ok {
+		idlPrefix = prefix
+	}
+	modelPrefix := ""
+	if prefix, ok := Params(gen)["modelprefix"]; ok {
+		modelPrefix = prefix
+	}
+	p := &plugin{Plugin: NewPlugin(), Gendir: gendir, IdlPrefix: idlPrefix, ModelPrefix: modelPrefix}
 	gen.CommandLineParameters(gen.Request.GetParameter())
 	gen.WrapTypes()
 	gen.SetPackageNames()
@@ -35,8 +47,8 @@ func main() {
 	fileLen := len(gen.Response.GetFile())
 	for i := 0; i < fileLen; i++ {
 		gen.Response.File[i].Name = proto.String(strings.Replace(gen.Response.File[i].GetName(), ".pb.go", ".gqlgen.pb.yml", -1))
-		_, file := path.Split(strings.Replace(gen.Response.File[i].GetName(), ".gqlgen.pb.yml", ".pb.graphqls", -1))
-		p.config[i].SchemaFilename = []string{path.Join(".", file)}
+		file := strings.Replace(gen.Response.File[i].GetName(), ".gqlgen.pb.yml", ".pb.graphqls", -1)
+		p.config[i].SchemaFilename = []string{file}
 		b, err := yaml.Marshal(p.config[i])
 		if err != nil {
 			p.Error(errors.New("cannot create codegen.yml"))
@@ -58,6 +70,9 @@ type plugin struct {
 	*Plugin
 
 	config []*config
+	Gendir string
+	IdlPrefix string
+	ModelPrefix string
 }
 
 func (p *plugin) GenerateImports(file *generator.FileDescriptor) {}
@@ -70,8 +85,9 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 
 			cfg := &config{
 				SchemaFilename: []string{},
-				Exec:           packageConfig{Filename: "exec.go"},
-				Model:          packageConfig{Filename: "models.go"},
+				Exec:           packageConfig{Filename: path.Join(p.Gendir, "generated.gen.go")},
+				Model:          packageConfig{Filename: path.Join(p.Gendir, "models.gen.go")},
+				Resolver:       packageConfig{Filename: path.Join(p.Gendir,"resolver.go"), Type: "resolver"},
 				Models:         make(map[string]typeMapEntry),
 			}
 
@@ -79,17 +95,39 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 				if typ == nil || p.IsEmpty(typ) || key == "Input" || key == "" { // filter possible junk data
 					continue
 				}
+				var packageDir string
+				if p.IdlPrefix != "" && strings.HasPrefix(typ.PackageDir, p.IdlPrefix) {
+					packageDir = strings.Replace(typ.PackageDir, p.IdlPrefix, "", 1)
+					packageDir = path.Join(p.ModelPrefix, packageDir)
+				} else {
+					packageDir = typ.PackageDir
+				}
+
+				model := []string{packageDir + "." + typ.TypeName}
 
 				if m, ok := cfg.Models[key]; ok {
-					m.Model = []string{typ.PackageDir + "." + typ.TypeName}
+					m.Model = model
 					cfg.Models[key] = m
 				} else {
-					cfg.Models[key] = typeMapEntry{Model: []string{typ.PackageDir + "." + typ.TypeName}}
+					cfg.Models[key] = typeMapEntry{Model: model, Fields: make(map[string]typeMapField)}
+				}
+				for _, f := range typ.DescriptorProto.GetField() {
+					name := toLowerCamelCase(f.GetName())
+					// TODO find a better way to check for gqlgencfg moretags
+					if strings.Contains(f.GetOptions().String(), "gqlgencfg:resolve") {
+						cfg.Models[key].Fields[name] = typeMapField{Resolver:  true, FieldName: name}
+					}
 				}
 			}
 			p.config = append(p.config, cfg)
 		}
 	}
+}
+
+func toLowerCamelCase(s string) string {
+	l := generator.CamelCase(s)
+	l = string(byte(l[0]) ^ ' ') + l[1:]
+	return l
 }
 
 type (
