@@ -112,7 +112,7 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 					cfg.Models[key] = typeMapEntry{Model: model, Fields: make(map[string]typeMapField)}
 				}
 				for _, f := range typ.DescriptorProto.GetField() {
-					name := toLowerCamelCase(f.GetName())
+					name := ToLowerFirst(generator.CamelCase(f.GetName()))
 					// TODO find a better way to check for gqlgencfg moretags
 					if strings.Contains(f.GetOptions().String(), "gqlgencfg:resolve") {
 						cfg.Models[key].Fields[name] = typeMapField{Resolver:  true, FieldName: name}
@@ -122,12 +122,6 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 			p.config = append(p.config, cfg)
 		}
 	}
-}
-
-func toLowerCamelCase(s string) string {
-	l := generator.CamelCase(s)
-	l = string(byte(l[0]) ^ ' ') + l[1:]
-	return l
 }
 
 type (

@@ -26,14 +26,21 @@ func main() {
 	}
 
 	serviceDirectives := false
-	if gogoimport, ok := Params(gen)["svcdir"]; ok {
-		serviceDirectives, err = strconv.ParseBool(gogoimport)
+	if v, ok := Params(gen)["svcdir"]; ok {
+		serviceDirectives, err = strconv.ParseBool(v)
+		if err != nil {
+			gen.Error(err, "parsing svcdir option")
+		}
+	}
+	unwrapResponse := false
+	if v, ok := Params(gen)["unwrapresponse"]; ok {
+		unwrapResponse, err = strconv.ParseBool(v)
 		if err != nil {
 			gen.Error(err, "parsing svcdir option")
 		}
 	}
 
-	p := &plugin{NewPlugin(), serviceDirectives}
+	p := &plugin{NewPlugin(), serviceDirectives, unwrapResponse}
 
 	gen.CommandLineParameters(gen.Request.GetParameter())
 	gen.WrapTypes()
@@ -60,6 +67,7 @@ func main() {
 type plugin struct {
 	*Plugin
 	serviceDirectives bool
+	unwrapResponse bool
 }
 
 func (p *plugin) GenerateImports(file *generator.FileDescriptor) {}
@@ -255,7 +263,12 @@ func (p *plugin) renderMethod(methods []*Method) {
 			}
 		} else if typ, ok := p.Types()[m.OutputType]; ok {
 			if !p.IsEmpty(typ) {
-				out = p.GqlModelNames()[typ]
+				if p.unwrapResponse {
+					field := typ.GetField()[0]
+					out = generator.CamelCase(field.GetName())
+				} else {
+					out = p.GqlModelNames()[typ]
+				}
 			}
 		}
 
