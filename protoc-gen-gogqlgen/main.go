@@ -170,8 +170,9 @@ func Unmarshal`, mapName, `(v interface{}) (mp `, mapType, `, err error) {
 				}
 				for _, oneof := range msg.OneofDecl {
 					oneofName := append(msg.TypeName(), oneof.GetName())
+					method := generator.CamelCaseSlice(msg.TypeName())+"_"+generator.CamelCase(msg.GetName())
 					p.Generator.P(`type Is`, generator.CamelCaseSlice(oneofName),
-						" interface{\n\tis", generator.CamelCaseSlice(oneofName), "()\n}")
+						" interface{\n\tis", method, "()\n}")
 				}
 			}
 			for _, enum := range file.Enums() {

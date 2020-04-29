@@ -229,13 +229,7 @@ func (p *Plugin) createOneofFromParent(name string, parent *Type, callstack Call
 		objects = p.types
 	}
 
-	oneofName := ""
-	for _, typeName := range callstack.List() {
-		oneofName += "."
-		if objects[typeName] != nil {
-			oneofName += objects[typeName].DescriptorProto.GetName()
-		}
-	}
+	oneofName := parent.DescriptorProto.GetName()
 
 	// the name of the generated type
 	fieldType := "." + strings.Trim(parent.originalPackage, ".") + oneofName + "_" + strings.Title(generator.CamelCase(field.GetName()))

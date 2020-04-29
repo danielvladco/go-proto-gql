@@ -198,7 +198,9 @@ func (p *plugin) generate(file *generator.FileDescriptor) {
 		oneof := entry.Value
 		p.P("union ", p.GqlModelNames()[oneof], " = ", strings.Join(func() (ss []string) {
 			for typeName := range oneof.OneofTypes {
-				ss = append(ss, p.GqlModelNames()[p.Types()[typeName]])
+				if t, ok := p.Types()[typeName]; ok && !p.IsEmpty(t) {
+					ss = append(ss, p.GqlModelNames()[p.Types()[typeName]])
+				}
 			}
 
 			sort.Sort(sort.StringSlice(ss))
