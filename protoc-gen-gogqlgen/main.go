@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -71,6 +72,7 @@ type plugin struct {
 	graphqlPkg generator.Single
 	jsonPkg    generator.Single
 	contextPkg generator.Single
+	reflectPkg generator.Single
 
 	enums    map[string]struct{}
 	messages map[string]struct{}
@@ -91,11 +93,16 @@ func (p *plugin) Generate(file *generator.FileDescriptor) {
 	p.graphqlPkg = p.NewImport("github.com/danielvladco/go-proto-gql/pb")
 	p.jsonPkg = p.NewImport("encoding/json")
 	p.contextPkg = p.NewImport("context")
+	p.reflectPkg = p.NewImport("reflect")
 
 	p.Scalars()
 	for _, r := range p.Request.FileToGenerate {
 		if r == file.GetName() {
 			p.InitFile(file)
+			msgRef := make(map[string]*generator.Descriptor)
+			for _, msg := range file.Messages() {
+				msgRef[msg.GetName()] = msg
+			}
 			for _, svc := range file.GetService() {
 				p.Generator.P(`type `, svc.GetName(), `GQLServer struct { Service `, svc.GetName(), `Server }`)
 				for _, rpc := range svc.GetMethod() {
@@ -170,9 +177,19 @@ func Unmarshal`, mapName, `(v interface{}) (mp `, mapType, `, err error) {
 				}
 				for _, oneof := range msg.OneofDecl {
 					oneofName := append(msg.TypeName(), oneof.GetName())
-					method := generator.CamelCaseSlice(msg.TypeName())+"_"+generator.CamelCase(msg.GetName())
+					method := "is" + generator.CamelCaseSlice(msg.TypeName()) + "_" + generator.CamelCase(msg.GetName())
 					p.Generator.P(`type Is`, generator.CamelCaseSlice(oneofName),
-						" interface{\n\tis", method, "()\n}")
+						" interface{\n\t", method, "()\n}")
+
+					// render Oneof_ConcreteTypes()
+					parentName := generator.CamelCaseSlice(msg.TypeName())
+					ss := oneofConcretes(msg, msgRef)
+					if len(ss) != 0 {
+						p.Generator.P(`
+func (p *`, generator.CamelCase(parentName), `) Oneof_ConcreteTypes() []`, p.reflectPkg.Use(), `.Type {
+	return []reflect.Type{`, strings.Join(ss, ","), `}
+}`)
+					}
 				}
 			}
 			for _, enum := range file.Enums() {
@@ -195,4 +212,23 @@ func (c `, enumType, `) MarshalGQL(w `, p.ioPkg.Use(), `.Writer) {
 
 		}
 	}
+}
+
+func oneofConcretes(msg *generator.Descriptor, msgRef map[string]*generator.Descriptor) []string {
+	ss := make([]string, 0)
+	for _, field := range msg.GetField() {
+		fieldName := strings.Title(generator.CamelCase(field.GetName()))
+		var shortTypeName string
+		tnParts := strings.Split(field.GetTypeName(), ".")
+		if len(tnParts) != 0 {
+			shortTypeName = tnParts[len(tnParts)-1]
+		}
+		if m, ok := msgRef[shortTypeName]; ok && len(m.GetField()) != 0 {
+			name := generator.CamelCaseSlice(msg.TypeName()) + "_" + fieldName
+			rName := `reflect.TypeOf((*` + name + `)(nil)).Elem()`
+			ss = append(ss, rName)
+		}
+	}
+	sort.Sort(sort.StringSlice(ss))
+	return ss
 }
