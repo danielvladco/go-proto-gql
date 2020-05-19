@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	gql "github.com/danielvladco/go-proto-gql/pb"
 	"log"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/danielvladco/go-proto-gql/pb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
@@ -41,14 +41,17 @@ const (
 )
 
 func NewPlugin() *Plugin {
-	return &Plugin{
-		fileIndex: -1,
-		types:     make(map[string]*Type),
-		inputs:    make(map[string]*Type),
-		enums:     make(map[string]*Type),
-		maps:      make(map[string]*Type),
-		oneofs:    make(map[string]*Type),
-		oneofsRef: make(map[OneofRef]string),
+	p := &Plugin{
+		fileIndex:     0,
+		schemas:       []*schema{{buffer: &bytes.Buffer{}}},
+		gqlModelNames: []map[*Type]string{make(map[*Type]string)},
+		fields:        make(map[fieldKey]*descriptor.FieldDescriptorProto),
+		types:         make(map[string]*Type),
+		inputs:        make(map[string]*Type),
+		enums:         make(map[string]*Type),
+		maps:          make(map[string]*Type),
+		oneofs:        make(map[string]*Type),
+		oneofsRef:     make(map[OneofRef]string),
 		scalars: map[string]*Type{
 			"__Directive":  {ModelDescriptor: ModelDescriptor{BuiltIn: true}},
 			"__Type":       {ModelDescriptor: ModelDescriptor{BuiltIn: true}},
@@ -64,8 +67,23 @@ func NewPlugin() *Plugin {
 		},
 		logger: log.New(os.Stderr, "protoc-gen-gogql: ", log.Lshortfile),
 	}
+	//p.schemas = []*schema{{buffer: &bytes.Buffer{}}}
+	//p.gqlModelNames = append(p.gqlModelNames, make(map[*Type]string))
+	// purge data for the current schema
+
+	// TODO set to nil
+	//p.types, p.inputs, p.enums, p.maps, p.scalars, p.oneofs, p.oneofsRef,
+	//	p.subscriptions, p.mutations, p.queries =
+	//	make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
+	//	make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
+	//	make(map[OneofRef]string), nil, nil, nil
+	return p
 }
 
+type fieldKey struct {
+	t *Type
+	f string
+}
 type Plugin struct {
 	*generator.Generator
 
@@ -81,11 +99,17 @@ type Plugin struct {
 	oneofs        map[string]*Type
 	oneofsRef     map[OneofRef]string // map containing reference to gql oneof names, we need this since oneofs cant fe found by name
 
+	fields map[fieldKey]*descriptor.FieldDescriptorProto
+
 	fileIndex     int
 	schemas       []*schema
 	gqlModelNames []map[*Type]string // map containing reference to gql type names
 
 	logger *log.Logger
+}
+
+func (p *Plugin) FieldBack(t *Type, name string) *descriptor.FieldDescriptorProto {
+	return p.fields[fieldKey{t, name}]
 }
 
 func (p *Plugin) GetOneof(ref OneofRef) *Type              { return p.oneofs[p.oneofsRef[ref]] }
@@ -459,6 +483,12 @@ func (p *Plugin) checkInitialized() {
 	}
 }
 
+func (p *Plugin) GraphQLField(t *Type, f *descriptor.FieldDescriptorProto) string {
+	dd := ToLowerFirst(generator.CamelCase(f.GetName()))
+	p.fields[fieldKey{t, dd}] = f
+	return dd
+}
+
 func (p *Plugin) GraphQLType(field *descriptor.FieldDescriptorProto, messagesIn map[string]*Type) string {
 	p.checkInitialized()
 	var gqltype string
@@ -600,16 +630,6 @@ func (p *Plugin) defineMethods(file *descriptor.FileDescriptorProto) {
 }
 
 func (p *Plugin) InitFile(file *descriptor.FileDescriptorProto) {
-	p.fileIndex++
-	p.schemas = append(p.schemas, &schema{buffer: &bytes.Buffer{}})
-	p.gqlModelNames = append(p.gqlModelNames, make(map[*Type]string))
-	// purge data for the current schema
-	p.types, p.inputs, p.enums, p.maps, p.scalars, p.oneofs, p.oneofsRef,
-		p.subscriptions, p.mutations, p.queries =
-		make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
-		make(map[string]*Type), make(map[string]*Type), make(map[string]*Type),
-		make(map[OneofRef]string), nil, nil, nil
-
 	p.defineMethods(file)
 	// get all input messages
 	for inputName := range p.inputs {
@@ -617,8 +637,8 @@ func (p *Plugin) InitFile(file *descriptor.FileDescriptorProto) {
 	}
 
 	// get all type messages
-	for inputName := range p.types {
-		p.FillTypeMap(inputName, p.types, false)
+	for typeName := range p.types {
+		p.FillTypeMap(typeName, p.types, false)
 	}
 
 	//p.mapToScalar()

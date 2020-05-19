@@ -1,14 +1,14 @@
-// Package grpcreflection provides gRPC reflection client.
-// Currently, gRPC reflection depends on Protocol Buffers, so we split this package from grpc package.
-package main
+package reflection
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	gr "github.com/jhump/protoreflect/grpcreflect"
+
+	"github.com/jhump/protoreflect/desc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
@@ -23,7 +23,7 @@ type Client interface {
 	// ListPackages lists file descriptors from the gRPC reflection server.
 	// ListPackages returns these errors:
 	//   - ErrTLSHandshakeFailed: TLS misconfig.
-	ListPackages() ([]*descriptor.FileDescriptorProto, error)
+	ListPackages() ([]*desc.FileDescriptor, error)
 	// Reset clears internal states of Client.
 	Reset()
 }
@@ -39,7 +39,7 @@ func NewClient(conn *grpc.ClientConn) Client {
 	}
 }
 
-func (c *client) ListPackages() ([]*descriptor.FileDescriptorProto, error) {
+func (c *client) ListPackages() ([]*desc.FileDescriptor, error) {
 	ssvcs, err := c.client.ListServices()
 	if err != nil {
 		msg := status.Convert(err).Message()
@@ -51,10 +51,10 @@ func (c *client) ListPackages() ([]*descriptor.FileDescriptorProto, error) {
 			strings.Contains(msg, "latest connection error: <nil>") {
 			return nil, ErrTLSHandshakeFailed
 		}
-		return nil, errors.Wrap(err, "failed to list services from reflecton enabled gRPC server")
+		return nil, fmt.Errorf("failed to list services from reflecton enabled gRPC server: %w", err)
 	}
 
-	fds := make([]*descriptor.FileDescriptorProto, 0, len(ssvcs))
+	fds := make([]*desc.FileDescriptor, 0, len(ssvcs))
 	for _, s := range ssvcs {
 		if s == reflectionServiceName {
 			continue
@@ -63,7 +63,7 @@ func (c *client) ListPackages() ([]*descriptor.FileDescriptorProto, error) {
 		if err != nil {
 			return nil, err
 		}
-		fds = append(fds, svc.GetFile().AsFileDescriptorProto())
+		fds = append(fds, svc.GetFile())
 	}
 
 	return fds, nil
