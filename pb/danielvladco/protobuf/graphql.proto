@@ -1,7 +1,7 @@
 syntax = "proto2";
-package gql;
+package danielvladco.protobuf.graphql;
 
-option go_package = "github.com/danielvladco/go-proto-gql/pb;gql";
+option go_package = "danielvladco/protobuf;graphql";
 
 import "google/protobuf/descriptor.proto";
 

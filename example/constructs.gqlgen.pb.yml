@@ -1,9 +1,12 @@
 schema:
 - constructs.pb.graphqls
 exec:
-  filename: exec.go
+  filename: generated.gen.go
 model:
-  filename: models.go
+  filename: models.gen.go
+resolver:
+  filename: resolver.go
+  type: resolver
 models:
   Any:
     model:

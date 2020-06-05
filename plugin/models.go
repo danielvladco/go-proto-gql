@@ -3,16 +3,32 @@ package plugin
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
+type stringSet map[string]struct{}
+
+func (s stringSet) Strings() (ss []string) {
+	slen, i := len(s), 0
+	if slen > 0 {
+		ss = make([]string, slen)
+	}
+	for v := range s {
+		ss[i] = v
+		i++
+	}
+	return
+}
+
 type ModelDescriptor struct {
-	BuiltIn     bool
-	PackageDir  string
+	FQN     string
+	BuiltIn bool
+	//PackageDir  string
 	TypeName    string
 	UsedAsInput bool
 	Index       int
-	OneofTypes  map[string]struct{}
+	OneofTypes  stringSet
+	Phony       bool
 
 	packageName     string
 	originalPackage string

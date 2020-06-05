@@ -1,13 +1,13 @@
 package plugin
 
 import (
-	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
+	//"github.com/golang/protobuf/protoc-gen-go/generator"
 	"strings"
 	"unicode"
 
 	"github.com/danielvladco/go-proto-gql/pb"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
 func getEnum(file *descriptor.FileDescriptorProto, typeName string) *descriptor.EnumDescriptorProto {
@@ -65,17 +65,17 @@ func GetGqlFieldOptions(field *descriptor.FieldDescriptorProto) *gql.Field {
 }
 
 // Match parsing algorithm from Generator.CommandLineParameters
-func Params(gen *generator.Generator) map[string]string {
-	params := make(map[string]string)
-
-	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {
-		kvp := strings.SplitN(parameter, "=", 2)
-		if len(kvp) != 2 {
-			continue
-		}
-
-		params[kvp[0]] = kvp[1]
-	}
-
-	return params
-}
+//func Params(gen *generator.Generator) map[string]string {
+//	params := make(map[string]string)
+//
+//	for _, parameter := range strings.Split(gen.Request.GetParameter(), ",") {
+//		kvp := strings.SplitN(parameter, "=", 2)
+//		if len(kvp) != 2 {
+//			continue
+//		}
+//
+//		params[kvp[0]] = kvp[1]
+//	}
+//
+//	return params
+//}

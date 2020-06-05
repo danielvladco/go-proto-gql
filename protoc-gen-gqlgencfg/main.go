@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	. "github.com/danielvladco/go-proto-gql/plugin"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/generator"
 	"gopkg.in/yaml.v2"
 )
 
@@ -30,7 +30,8 @@ func main() {
 	gen.WrapTypes()
 	gen.SetPackageNames()
 	gen.BuildTypeNameMap()
-	gen.GeneratePlugin(p)
+	generator.RegisterPlugin(p)
+	gen.GenerateAllFiles()
 
 	fileLen := len(gen.Response.GetFile())
 	for i := 0; i < fileLen; i++ {

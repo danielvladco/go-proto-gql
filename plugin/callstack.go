@@ -6,6 +6,7 @@ type Callstack interface {
 	Has(entry string) bool
 	Free()
 	List() []string
+	Len() int
 }
 
 func NewCallstack() Callstack {
@@ -44,4 +45,8 @@ func (c *callstack) List() []string {
 func (c *callstack) Has(entry string) bool {
 	_, ok := c.stack[entry]
 	return ok
+}
+
+func (c *callstack) Len() int {
+	return len(c.stack)
 }

@@ -1,3 +1,5 @@
+// Package grpcreflection provides gRPC reflection client.
+// Currently, gRPC reflection depends on Protocol Buffers, so we split this package from grpc package.
 package reflection
 
 import (
@@ -6,9 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	gr "github.com/jhump/protoreflect/grpcreflect"
-
 	"github.com/jhump/protoreflect/desc"
+	gr "github.com/jhump/protoreflect/grpcreflect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
@@ -33,13 +34,21 @@ type client struct {
 }
 
 // NewClient returns an instance of gRPC reflection client for gRPC protocol.
-func NewClient(conn *grpc.ClientConn) Client {
+func NewClient(conn grpc.ClientConnInterface) Client {
 	return &client{
 		client: gr.NewClient(context.Background(), grpc_reflection_v1alpha.NewServerReflectionClient(conn)),
 	}
 }
 
+// NewWebClient returns an instance of gRPC reflection client for gRPC-Web protocol.
+//func NewWebClient(conn *grpcweb.ClientConn) Client {
+//	return &client{
+//		client: gr.NewClient(context.Background(), grpcweb_reflection_v1alpha.NewServerReflectionClient(conn)),
+//	}
+//}
+
 func (c *client) ListPackages() ([]*desc.FileDescriptor, error) {
+	//c.client.FileContainingExtension()
 	ssvcs, err := c.client.ListServices()
 	if err != nil {
 		msg := status.Convert(err).Message()
@@ -54,7 +63,7 @@ func (c *client) ListPackages() ([]*desc.FileDescriptor, error) {
 		return nil, fmt.Errorf("failed to list services from reflecton enabled gRPC server: %w", err)
 	}
 
-	fds := make([]*desc.FileDescriptor, 0, len(ssvcs))
+	var fds []*desc.FileDescriptor
 	for _, s := range ssvcs {
 		if s == reflectionServiceName {
 			continue
@@ -63,9 +72,10 @@ func (c *client) ListPackages() ([]*desc.FileDescriptor, error) {
 		if err != nil {
 			return nil, err
 		}
-		fds = append(fds, svc.GetFile())
-	}
 
+		fd := svc.GetFile() //.AsFileDescriptorProto()
+		fds = append(fds, fd)
+	}
 	return fds, nil
 }
 
