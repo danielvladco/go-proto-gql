@@ -22,6 +22,16 @@ type caller struct {
 	origServices map[SvcKey]SvcVal
 }
 
+type SvcKey struct {
+	*descriptor.ServiceDescriptorProto
+	*descriptor.MethodDescriptorProto
+}
+
+type SvcVal struct {
+	grpcdynamic.Stub
+	*desc.MethodDescriptor
+}
+
 func NewReflectCaller(endpoints []string) (*caller, []*desc.FileDescriptor, []string, error) {
 	var descs []*desc.FileDescriptor
 

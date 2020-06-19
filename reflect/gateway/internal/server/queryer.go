@@ -10,12 +10,11 @@ import (
 	"time"
 
 	graphql99 "github.com/99designs/gqlgen/graphql"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
-	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"github.com/nautilus/graphql"
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -25,16 +24,6 @@ type any = map[string]interface{}
 
 func NewQueryer(pm *GQLProtoMapping, p GQLDescriptors, caller Caller) graphql.Queryer {
 	return &queryer{pm: pm, p: p, c: caller}
-}
-
-type SvcKey struct {
-	*descriptor.ServiceDescriptorProto
-	*descriptor.MethodDescriptorProto
-}
-
-type SvcVal struct {
-	grpcdynamic.Stub
-	*desc.MethodDescriptor
 }
 
 type queryer struct {
