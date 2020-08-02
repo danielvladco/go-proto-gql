@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/handler"
+	graphql "github.com/danielvladco/go-proto-gql/pb/danielvladco/protobuf"
 	"log"
 	"net/http"
 )
@@ -24,12 +23,11 @@ func main() {
 		log.Fatalf("failed to create new schema, error: %v", err)
 	}
 	h := handler.New(&handler.Config{
-		Schema: &schema,
-		Pretty: true,
+		Schema:   &schema,
+		Pretty:   true,
 		GraphiQL: true,
 	})
 
 	http.Handle("/graphql", h)
 	http.ListenAndServe(":8080", nil)
-
 }

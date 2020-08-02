@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"google.golang.org/grpc"
@@ -15,21 +14,11 @@ import (
 )
 
 type Caller interface {
-	Call(ctx context.Context, svc *descriptor.ServiceDescriptorProto, rpc *descriptor.MethodDescriptorProto, message proto.Message) (proto.Message, error)
+	Call(ctx context.Context, svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error)
 }
 
 type caller struct {
-	origServices map[SvcKey]SvcVal
-}
-
-type SvcKey struct {
-	*descriptor.ServiceDescriptorProto
-	*descriptor.MethodDescriptorProto
-}
-
-type SvcVal struct {
-	grpcdynamic.Stub
-	*desc.MethodDescriptor
+	serviceStub map[*desc.ServiceDescriptor]grpcdynamic.Stub
 }
 
 func NewReflectCaller(endpoints []string) (*caller, []*desc.FileDescriptor, []string, error) {
@@ -54,18 +43,10 @@ func NewReflectCaller(endpoints []string) (*caller, []*desc.FileDescriptor, []st
 		}
 	}
 
-	origServices := map[SvcKey]SvcVal{}
+	origServices := map[*desc.ServiceDescriptor]grpcdynamic.Stub{}
 	for _, d := range descs {
 		for _, svc := range d.GetServices() {
-			for _, rpc := range svc.GetMethods() {
-				origServices[SvcKey{
-					svc.AsServiceDescriptorProto(),
-					rpc.AsMethodDescriptorProto(),
-				}] = SvcVal{
-					grpcdynamic.NewStub(descsconn[d]),
-					rpc,
-				}
-			}
+			origServices[svc] = grpcdynamic.NewStub(descsconn[d])
 		}
 	}
 
@@ -86,7 +67,7 @@ func NewReflectCaller(endpoints []string) (*caller, []*desc.FileDescriptor, []st
 	}
 
 	return &caller{
-		origServices: origServices,
+		serviceStub: origServices,
 	}, descs, filesToGenerate, nil
 }
 
@@ -110,10 +91,9 @@ func getAllDependencies(file *desc.FileDescriptor, files map[*desc.FileDescripto
 	}
 }
 
-func (c caller) Call(ctx context.Context, svc *descriptor.ServiceDescriptorProto, rpc *descriptor.MethodDescriptorProto, message proto.Message) (proto.Message, error) {
-	svcMapping := c.origServices[SvcKey{svc, rpc}]
+func (c caller) Call(ctx context.Context, svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error) {
 	startTime := time.Now()
-	res, err := svcMapping.Stub.InvokeRpc(ctx, svcMapping.MethodDescriptor, message)
+	res, err := c.serviceStub[svc].InvokeRpc(ctx, rpc, message)
 	log.Printf("[INFO] grpc request took: %fms", float64(time.Since(startTime))/float64(time.Millisecond))
 	return res, err
 }

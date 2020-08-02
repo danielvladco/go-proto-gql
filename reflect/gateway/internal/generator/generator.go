@@ -138,9 +138,13 @@ type SchemaDescriptor struct {
 	mutation     *RootDefinition
 	subscription *RootDefinition
 
-	objects []*ObjectDefinition
+	objects []*ObjectDescriptor
 
 	reservedNames map[string]desc.Descriptor
+}
+
+func (s *SchemaDescriptor) Objects() []*ObjectDescriptor {
+	return s.objects
 }
 
 func (s *SchemaDescriptor) GetMutation() *RootDefinition {
@@ -177,7 +181,7 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 	d2, ok := s.reservedNames[name]
 	if ok {
 		if d == d2 {
-			return name
+			return name //fixme
 		}
 	}
 
@@ -198,11 +202,11 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 	return
 }
 
-func (s *SchemaDescriptor) CreateObjects(msg *desc.MessageDescriptor, input bool) (*ObjectDefinition, error) {
+func (s *SchemaDescriptor) CreateObjects(msg *desc.MessageDescriptor, input bool) (*ObjectDescriptor, error) {
 	return s.createObjects(msg, input, NewCallstack())
 }
 
-func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstack Callstack) (obj *ObjectDefinition, err error) {
+func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstack Callstack) (obj *ObjectDescriptor, err error) {
 	// the case if trying to resolve a primitive as a object. In this case we just return nil
 	if d == nil {
 		return
@@ -211,6 +215,15 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 	defer callstack.Pop(d)
 	switch dd := d.(type) {
 	case *desc.MessageDescriptor:
+		if IsEmpty(dd) {
+			return nil, nil
+		}
+		if IsAny(dd) {
+			any := s.createScalar("Any", "Any is any json type")
+			s.objects = append(s.objects, any)
+			return any, nil
+		}
+
 		kind := ast.Object
 		if input {
 			kind = ast.InputObject
@@ -261,7 +274,7 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 			fields = append(fields, f)
 		}
 
-		obj = &ObjectDefinition{
+		obj = &ObjectDescriptor{
 			Definition: &ast.Definition{
 				Kind:        kind,
 				Description: getDescription(d),
@@ -273,7 +286,7 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 			fields:     fields,
 		}
 	case *desc.EnumDescriptor:
-		obj = &ObjectDefinition{
+		obj = &ObjectDescriptor{
 			Definition: &ast.Definition{
 				Kind:        ast.Enum,
 				Description: getDescription(d),
@@ -287,14 +300,14 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 		panic(fmt.Sprintf("received unexpected value %v of type %T", dd, dd))
 	}
 
-	if obj.IsEmpty() {
-		return obj, nil
-	}
-	if obj.IsAny() {
-		any := s.createScalar("Any", "Any is any json type")
-		s.objects = append(s.objects, any)
-		return any, nil
-	}
+	//if obj.IsEmpty() {
+	//	return obj, nil
+	//}
+	//if obj.IsAny() {
+	//	any := s.createScalar("Any", "Any is any json type")
+	//	s.objects = append(s.objects, any)
+	//	return any, nil
+	//}
 	s.objects = append(s.objects, obj)
 	return obj, nil
 }
@@ -336,39 +349,47 @@ type FieldDescriptor struct {
 	*ast.FieldDefinition
 	*desc.FieldDescriptor
 
-	typ *ObjectDefinition
+	typ *ObjectDescriptor
 }
 
-func (f *FieldDescriptor) GetType() *ObjectDefinition {
+func (f *FieldDescriptor) GetType() *ObjectDescriptor {
 	return f.typ
 }
 
-type MethodDefinition struct {
+type MethodDescriptor struct {
 	*desc.ServiceDescriptor
 	*desc.MethodDescriptor
 
 	*ast.FieldDefinition
 
-	input  *ObjectDefinition
-	output *ObjectDefinition
+	input  *ObjectDescriptor
+	output *ObjectDescriptor
 }
 
-func (m *MethodDefinition) AsGraphql() *ast.FieldDefinition {
+func (m *MethodDescriptor) AsGraphql() *ast.FieldDefinition {
 	return m.FieldDefinition
+}
+
+func (m *MethodDescriptor) GetInput() *ObjectDescriptor {
+	return m.input
+}
+
+func (m *MethodDescriptor) GetOutput() *ObjectDescriptor {
+	return m.output
 }
 
 type RootDefinition struct {
 	*ast.Definition
 
-	methods     []*MethodDefinition
-	methodNames map[string]*MethodDefinition
+	methods     []*MethodDescriptor
+	methodNames map[string]*MethodDescriptor
 }
 
-func (r *RootDefinition) uniqueName(svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor) string {
-	return strings.Title(svc.GetName())
+func (r *RootDefinition) Methods() []*MethodDescriptor {
+	return r.methods
 }
 
-func (r *RootDefinition) addMethod(method *MethodDefinition) {
+func (r *RootDefinition) addMethod(method *MethodDescriptor) {
 	r.methods = append(r.methods, method)
 	// TODO maybe not do it here?
 	r.Definition.Fields = append(r.Definition.Fields, method.FieldDefinition)
@@ -397,7 +418,6 @@ func getDescription(descs ...desc.Descriptor) string {
 		if info == nil {
 			continue
 		}
-		println("1")
 		if info.LeadingComments != nil {
 			description = append(description, *info.LeadingComments)
 		}
@@ -409,9 +429,9 @@ func getDescription(descs ...desc.Descriptor) string {
 	return strings.Join(description, "\n")
 }
 
-func (s *SchemaDescriptor) createMethod(svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, in, out *ObjectDefinition) *MethodDefinition {
+func (s *SchemaDescriptor) createMethod(svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, in, out *ObjectDescriptor) *MethodDescriptor {
 	var args ast.ArgumentDefinitionList
-	if !in.IsEmpty() {
+	if in != nil && in.Descriptor != nil && !IsEmpty(in.Descriptor.(*desc.MessageDescriptor)) {
 		args = append(args, &ast.ArgumentDefinition{
 			Description:  "",
 			DefaultValue: nil,
@@ -422,7 +442,7 @@ func (s *SchemaDescriptor) createMethod(svc *desc.ServiceDescriptor, rpc *desc.M
 		})
 	}
 	objType := ast.NamedType("Boolean", &ast.Position{})
-	if !out.IsEmpty() {
+	if out != nil && out.Descriptor != nil && !IsEmpty(out.Descriptor.(*desc.MessageDescriptor)) {
 		objType = ast.NamedType(out.Name, &ast.Position{})
 	}
 
@@ -434,7 +454,7 @@ func (s *SchemaDescriptor) createMethod(svc *desc.ServiceDescriptor, rpc *desc.M
 	}
 	s.Schema.Directives[svcDir.Name] = svcDir
 
-	m := &MethodDefinition{
+	m := &MethodDescriptor{
 		ServiceDescriptor: svc,
 		MethodDescriptor:  rpc,
 		FieldDefinition: &ast.FieldDefinition{
@@ -457,7 +477,7 @@ func (s *SchemaDescriptor) createMethod(svc *desc.ServiceDescriptor, rpc *desc.M
 	return m
 }
 
-func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDefinition) (_ *FieldDescriptor, err error) {
+func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDescriptor) (_ *FieldDescriptor, err error) {
 	fieldAst := &ast.FieldDefinition{
 		Description: getDescription(field),
 		Name:        ToLowerFirst(CamelCase(field.GetName())),
@@ -519,8 +539,8 @@ func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectD
 	}, nil
 }
 
-func (s *SchemaDescriptor) createScalar(name string, description string) *ObjectDefinition {
-	obj := &ObjectDefinition{
+func (s *SchemaDescriptor) createScalar(name string, description string) *ObjectDescriptor {
+	obj := &ObjectDescriptor{
 		Definition: &ast.Definition{
 			Kind:        ast.Scalar,
 			Description: description,
@@ -544,7 +564,7 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, callstack Ca
 			return nil, err
 		}
 
-		obj = &ObjectDefinition{
+		obj = &ObjectDescriptor{
 			Definition: &ast.Definition{
 				Kind:        ast.Object,
 				Description: getDescription(f),
@@ -559,7 +579,7 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, callstack Ca
 		s.objects = append(s.objects, obj)
 		types = append(types, obj.Name)
 	}
-	obj := &ObjectDefinition{
+	obj := &ObjectDescriptor{
 		Definition: &ast.Definition{
 			Kind:        ast.Union,
 			Description: getDescription(oneof),

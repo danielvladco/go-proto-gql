@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/danielvladco/go-proto-gql/reflect/gateway/internal/generator"
 	"log"
 	"reflect"
 	"time"
@@ -22,13 +23,12 @@ import (
 
 type any = map[string]interface{}
 
-func NewQueryer(pm *GQLProtoMapping, p GQLDescriptors, caller Caller) graphql.Queryer {
-	return &queryer{pm: pm, p: p, c: caller}
+func NewQueryer(pm generator.Repository, caller Caller) graphql.Queryer {
+	return &queryer{pm: pm, c: caller}
 }
 
 type queryer struct {
-	pm *GQLProtoMapping
-	p  GQLDescriptors
+	pm generator.Repository
 
 	c Caller
 }
@@ -96,17 +96,17 @@ func (q *queryer) resolveSelection(ctx context.Context, selection ast.SelectionS
 }
 
 func (q *queryer) resolveCall(ctx context.Context, field *ast.Field, vars map[string]interface{}) (interface{}, error) {
-	method, err := q.pm.GetMethod(field.Name)
+	method := q.pm.FindMethodByName(field.Name)
+	if method == nil {
+		return nil, errors.New("method not found")
+	}
+
+	inputMsg, err := q.pbEncode(method.GetInputType(), field, vars)
 	if err != nil {
 		return nil, err
 	}
 
-	inputMsg, err := q.pbEncode(field, vars)
-	if err != nil {
-		return nil, err
-	}
-
-	msg, err := q.c.Call(ctx, method.ServiceDescriptorProto, method.MethodDescriptorProto, inputMsg)
+	msg, err := q.c.Call(ctx, method.GetService(), method, inputMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -114,23 +114,15 @@ func (q *queryer) resolveCall(ctx context.Context, field *ast.Field, vars map[st
 	return q.pbDecode(field, msg)
 }
 
-func (q *queryer) pbEncode(field *ast.Field, vars map[string]interface{}) (proto.Message, error) {
-	in, err := q.pm.InputType(field.Name)
-	if err != nil {
-		return nil, err
-	}
-	if in == nil {
-		return nil, errors.New("unexpected call without a request message")
-	}
-
-	inputMsg := dynamic.NewMessage(q.pm.messages[in.DescriptorProto])
+func (q *queryer) pbEncode(in *desc.MessageDescriptor, field *ast.Field, vars map[string]interface{}) (proto.Message, error) {
+	inputMsg := dynamic.NewMessage(in)
 	inArg := field.Arguments.ForName("in")
 	if inArg == nil {
 		return inputMsg, nil
 	}
 
-	var anyTypeDescriptor *desc.MessageDescriptor
-	if q.p.IsAny(in.FQN) {
+	var anyObj *desc.MessageDescriptor
+	if generator.IsAny(in) {
 		_, _ = graphql99.UnmarshalAny(nil)
 		if len(inArg.Value.Children) == 0 {
 			return nil, errors.New("no '__typename' provided")
@@ -149,11 +141,12 @@ func (q *queryer) pbEncode(field *ast.Field, vars map[string]interface{}) (proto
 			return nil, errors.New("no '__typename' provided")
 		}
 
-		anyTypeDescriptor, ok = q.pm.gqltypeToDesc[vvv]
-		if !ok {
+		obj := q.pm.FindObjectByName(vvv)
+		if obj == nil {
 			return nil, errors.New("__typename should be a valid typename")
 		}
-		inputMsg = dynamic.NewMessage(anyTypeDescriptor)
+		anyObj = obj
+		inputMsg = dynamic.NewMessage(anyObj)
 	}
 	oneofValidate := map[*desc.OneOfDescriptor]struct{}{}
 	for _, arg := range inArg.Value.Children {
@@ -166,17 +159,19 @@ func (q *queryer) pbEncode(field *ast.Field, vars map[string]interface{}) (proto
 		}
 
 		var reqDesc *desc.FieldDescriptor
-		if anyTypeDescriptor != nil {
-			reqDesc = q.pm.fields[q.p.FieldBack(anyTypeDescriptor.AsDescriptorProto(), arg.Name)]
+		if anyObj != nil {
+			reqDesc = q.pm.FindFieldByName(anyObj, arg.Name)
+			//reqDesc = q.pm.fields[q.p.FieldBack(anyObj.AsDescriptorProto(), arg.Name)]
 		} else {
-			reqDesc = q.pm.fields[q.p.FieldBack(in.DescriptorProto, arg.Name)]
+			reqDesc = in.FindFieldByName(arg.Name)
+			//reqDesc = q.pm.fields[q.p.FieldBack(in.DescriptorProto, arg.Name)]
 		}
 
 		oneof := reqDesc.GetOneOf()
 		if oneof != nil {
 			_, ok := oneofValidate[oneof]
 			if ok {
-				return nil, fmt.Errorf("field with name %q on Object %q can't be set", arg.Name, q.p.GqlModelNames()[in])
+				return nil, fmt.Errorf("field with name %q on Object %q can't be set", arg.Name, in.GetName())
 			}
 			oneofValidate[oneof] = struct{}{}
 		}
@@ -188,12 +183,12 @@ func (q *queryer) pbEncode(field *ast.Field, vars map[string]interface{}) (proto
 		inputMsg.SetField(reqDesc, val)
 	}
 
-	if anyTypeDescriptor != nil {
+	if anyObj != nil {
 		//anyMsgDesc := q.pm.messages[in.DescriptorProto]
 		//anyMsg := dynamic.NewMessage(q.pm.messages[in.DescriptorProto])
 		//typeUrl := anyMsgDesc.FindFieldByName("type_url")
 		//value := anyMsgDesc.FindFieldByName("value")
-		//anyMsg.SetField(typeUrl, anyTypeDescriptor.GetFullyQualifiedName())
+		//anyMsg.SetField(typeUrl, anyObj.GetFullyQualifiedName())
 		return ptypes.MarshalAny(inputMsg)
 	}
 	return inputMsg, nil
@@ -267,14 +262,15 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 			}
 		}
 		var msg *dynamic.Message
-		if q.p.IsAny(msgDesc.GetFullyQualifiedName()) {
-			anyTypeDescriptor, ok = q.pm.gqltypeToDesc[vvv]
-			if !ok {
+		protoDesc := msgDesc
+		if generator.IsAny(protoDesc) {
+			anyTypeDescriptor = q.pm.FindObjectByName(vvv)
+			if anyTypeDescriptor == nil {
 				return nil, errors.New("'__typename' must be a valid INPUT_OBJECT")
 			}
 			msg = dynamic.NewMessage(anyTypeDescriptor)
 		} else {
-			msg = dynamic.NewMessage(msgDesc)
+			msg = dynamic.NewMessage(protoDesc)
 		}
 		oneofValidate := map[*desc.OneOfDescriptor]struct{}{}
 		for kk, vv := range v {
@@ -282,13 +278,14 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 			if anyTypeDescriptor != nil {
 				msgDesc = anyTypeDescriptor
 			}
-			plugType := q.pm.inputs[msgDesc]
-			fieldDesc := q.pm.fields[q.p.FieldBack(plugType.DescriptorProto, kk)]
+			//plugType := q.pm.inputs[msgDesc]
+			//fieldDesc := q.pm.fields[q.p.FieldBack(plugType.DescriptorProto, kk)]
+			fieldDesc := msgDesc.FindFieldByName(kk)
 			oneof := fieldDesc.GetOneOf()
 			if oneof != nil {
 				_, ok := oneofValidate[oneof]
 				if ok {
-					return nil, fmt.Errorf("field with name %q on Object %q can't be set", kk, q.p.GqlModelNames()[plugType])
+					return nil, fmt.Errorf("field with name %q on Object %q can't be set", kk, msgDesc.GetName())
 				}
 				oneofValidate[oneof] = struct{}{}
 			}
@@ -297,7 +294,7 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 			if err != nil {
 				return nil, err
 			}
-			msg.SetField(q.pm.fields[q.p.FieldBack(plugType.DescriptorProto, kk)], vv2)
+			msg.SetField(msgDesc.FindFieldByName(kk), vv2)
 		}
 		if anyTypeDescriptor != nil {
 			return ptypes.MarshalAny(msg)
@@ -308,7 +305,7 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 	return val, nil
 }
 
-func (q *queryer) pbDecodeOneofField(desc *descriptor.DescriptorProto, dynamicMsg *dynamic.Message, selection ast.SelectionSet) (oneof any, err error) {
+func (q *queryer) pbDecodeOneofField(desc *desc.MessageDescriptor, dynamicMsg *dynamic.Message, selection ast.SelectionSet) (oneof any, err error) {
 	oneof = any{}
 	for _, f := range selection {
 		out, ok := f.(*ast.Field)
@@ -319,8 +316,8 @@ func (q *queryer) pbDecodeOneofField(desc *descriptor.DescriptorProto, dynamicMs
 			oneof[nameOrAlias(out)] = out.ObjectDefinition.Name
 			continue
 		}
-		fieldBack := q.p.FieldBack(desc, out.Name)
-		fieldDesc := q.pm.fields[fieldBack]
+
+		fieldDesc := q.pm.FindFieldByName(desc, out.Name)
 		protoVal := dynamicMsg.GetField(fieldDesc)
 		oneof[nameOrAlias(out)], err = q.gqlValue(protoVal, fieldDesc.GetMessageType(), fieldDesc.GetEnumType(), out)
 		if err != nil {
@@ -410,16 +407,16 @@ func (q *queryer) gqlValue(val interface{}, msgDesc *desc.MessageDescriptor, enu
 				vals[nameOrAlias(out)] = out.ObjectDefinition.Name
 				continue
 			}
-			descMsg := v.GetMessageDescriptor().AsDescriptorProto()
-			protoFieldDesc := q.p.FieldBack(v.GetMessageDescriptor().AsDescriptorProto(), out.Name)
-			if protoFieldDesc == nil {
+
+			descMsg := v.GetMessageDescriptor()
+			fieldDesc := q.pm.FindFieldByName(descMsg, out.Name)
+			if fieldDesc == nil {
 				vals[nameOrAlias(out)], err = q.pbDecodeOneofField(descMsg, v, out.SelectionSet)
 				if err != nil {
 					return nil, err
 				}
 				break
 			}
-			fieldDesc := q.pm.fields[protoFieldDesc]
 
 			vals[nameOrAlias(out)], err = q.gqlValue(v.GetField(fieldDesc), fieldDesc.GetMessageType(), fieldDesc.GetEnumType(), out)
 			if err != nil {
@@ -432,8 +429,9 @@ func (q *queryer) gqlValue(val interface{}, msgDesc *desc.MessageDescriptor, enu
 		if err != nil {
 			return nil, err
 		}
-		tp := q.pm.pbtypeToDesc[fqn]
-		outputMsg := dynamic.NewMessage(q.pm.messages[tp.DescriptorProto])
+		//tp := q.pm.pbtypeToDesc[fqn]
+		grpcType, gqlType := q.pm.FindObjectByFullyQualifiedName(fqn)
+		outputMsg := dynamic.NewMessage(grpcType)
 		err = outputMsg.Unmarshal(v.Value)
 		if err != nil {
 			return nil, err
@@ -450,7 +448,7 @@ func (q *queryer) gqlValue(val interface{}, msgDesc *desc.MessageDescriptor, enu
 				continue
 			}
 			if out.Name == "__typename" {
-				vals[nameOrAlias(out)] = q.p.GqlModelNames()[tp]
+				vals[nameOrAlias(out)] = gqlType.Name
 			}
 		}
 

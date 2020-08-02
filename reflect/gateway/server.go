@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"github.com/danielvladco/go-proto-gql/reflect/gateway/internal/generator"
 	"log"
 	"net/http"
 	"os"
@@ -40,22 +41,23 @@ func main() {
 		cfg.Playground = &plg
 	}
 
-	caller, descs, res, err := server.NewReflectCaller(cfg.Endpoints)
+	caller, descs, _, err := server.NewReflectCaller(cfg.Endpoints)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	gqlDesc := server.GenerateGQLComponents(res, descs)
+	//gqlDesc := server.GenerateGQLComponents(res, descs)
+	gqlDesc, err := generator.NewSchemas(descs, true)
+	fatalOnErr(err)
+
+	repo := generator.NewInmemRepository(gqlDesc)
 
 	queryFactory := gateway.QueryerFactory(func(ctx *gateway.PlanningContext, url string) graphql.Queryer {
-		return server.QueryerLogger{server.NewQueryer(server.NewMapping(gqlDesc, descs), gqlDesc, caller)}
+		return server.QueryerLogger{server.NewQueryer(repo, caller)}
 	})
 
 	sources := []*graphql.RemoteSchema{{URL: "url1"}}
-	sources[0].Schema, err = server.GenerateSchema(gqlDesc)
-	if err != nil {
-		log.Fatal(err)
-	}
+	sources[0].Schema = gqlDesc.AsGraphql()[0]
 
 	//sc, _ := os.Create("schema.graphql")
 	//defer sc.Close()

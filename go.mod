@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/danielvladco/go-proto-gql/pb v0.6.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.4.2
 	github.com/graphql-go/graphql v0.7.8
 	github.com/graphql-go/handler v0.2.3
