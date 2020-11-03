@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strconv"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 )
@@ -31,6 +33,8 @@ func UnmarshalBytes(v interface{}) ([]byte, error) {
 		return v, nil
 	case json.RawMessage:
 		return []byte(v), nil
+	case graphql.Upload:
+		return ioutil.ReadAll(v.File)
 	default:
 		return nil, fmt.Errorf("%T is not []byte", v)
 	}
