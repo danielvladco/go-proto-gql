@@ -1,19 +1,31 @@
-.PHONY: install example
+# Go tools dependencies
+GO_TOOLS := \
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc \
+	google.golang.org/protobuf/cmd/protoc-gen-go \
+	github.com/99designs/gqlgen \
+	./protoc-gen-gql \
+	./protoc-gen-gogql
 
-install:
-	go install github.com/golang/protobuf/protoc-gen-go
-	protoc --go_out=paths=source_relative:./pb -I=./pb ./pb/*.proto
-	go install ./protoc-gen-gql
-	go install ./protoc-gen-gogqlgen
-	go install ./protoc-gen-gqlgencfg
+GOPATH := $(shell go env GOPATH)
 
-example:
-	protoc \
-	--go_out=plugins=grpc,paths=source_relative:. \
-	--gqlgencfg_out=paths=source_relative:. \
-	--gql_out=svcdir=true,paths=source_relative:. \
-	--gogqlgen_out=paths=source_relative,gogoimport=false:. \
-	-I=. -I=./example/ ./example/*.proto
+.PHONY: all
+all: all-tools pb/graphql.pb.go
 
-example2:
-	protoc --go_out=plugins=grpc,paths=source_relative:. -I=. -I=./reflect/examples/optionsserver/pb/ ./reflect/examples/optionsserver/pb/*.proto
+.PHONY: all-tools
+all-tools: ${GOPATH}/bin/protoc go-tools
+
+.PHONY: go-tools
+go-tools: $(foreach l, ${GO_TOOLS}, ${GOPATH}/bin/$(notdir $(l)))
+
+define LIST_RULE
+${GOPATH}/bin/$(notdir $(1)): go.mod
+	go install $(1)
+endef
+
+$(foreach l, $(GO_TOOLS), $(eval $(call LIST_RULE, $(l) )))
+
+pb/graphql.pb.go: ./pb/graphql.proto all-tools
+	protoc --go_out=paths=source_relative:. ./pb/graphql.proto
+
+${GOPATH}/bin/protoc:
+	./scripts/install-protoc.sh

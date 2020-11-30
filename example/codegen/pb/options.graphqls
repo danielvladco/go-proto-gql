@@ -1,0 +1,131 @@
+directive @Query on FIELD_DEFINITION
+directive @Service on FIELD_DEFINITION
+type Data {
+	"""
+	 must be required
+	
+	"""
+	stringX: String!
+	"""
+	 must be required
+	
+	"""
+	foo: Foo2!
+	"""
+	 must be required because its greater than 0
+	
+	"""
+	double: [Float!]!
+	"""
+	 simple
+	
+	"""
+	string2: String
+	"""
+	 simple
+	
+	"""
+	foo2: Foo2
+	"""
+	 simple
+	
+	"""
+	double2: [Float!]
+}
+input DataInput {
+	"""
+	 must be required
+	
+	"""
+	stringX: String!
+	"""
+	 must be required
+	
+	"""
+	foo: Foo2Input!
+	"""
+	 must be required because its greater than 0
+	
+	"""
+	double: [Float!]!
+	"""
+	 simple
+	
+	"""
+	string2: String
+	"""
+	 simple
+	
+	"""
+	foo2: Foo2Input
+	"""
+	 simple
+	
+	"""
+	double2: [Float!]
+}
+type Foo2 {
+	param1: String
+}
+input Foo2Input {
+	param1: String
+}
+type Mutation {
+	"""
+	 must be a mutation
+	
+	"""
+	serviceMutate1(in: DataInput): Data @Service
+	"""
+	 must be a mutation
+	
+	"""
+	serviceMutate2(in: DataInput): Data @Service
+	"""
+	 must be a mutation
+	
+	"""
+	servicePublish(in: DataInput): Data @Service
+	"""
+	 must be a mutation and a subscription
+	
+	"""
+	servicePubSub1(in: DataInput): Data @Service
+	serviceInvalidSubscribe3(in: DataInput): Data @Service
+	servicePubSub2(in: DataInput): Data @Service
+	queryMutate1(in: DataInput): Data @Query
+}
+type Query {
+	serviceQuery1(in: DataInput): Data @Service
+	serviceInvalidSubscribe1(in: DataInput): Data @Service
+	"""
+	 must be a query
+	
+	"""
+	queryQuery1(in: DataInput): Data @Query
+	"""
+	 must be a query
+	
+	"""
+	queryQuery2(in: DataInput): Data @Query
+}
+type Subscription {
+	"""
+	 must be a subscription
+	
+	"""
+	serviceSubscribe(in: DataInput): Data @Service
+	"""
+	 must be a mutation and a subscription
+	
+	"""
+	servicePubSub1(in: DataInput): Data @Service
+	serviceInvalidSubscribe2(in: DataInput): Data @Service
+	serviceInvalidSubscribe3(in: DataInput): Data @Service
+	servicePubSub2(in: DataInput): Data @Service
+	"""
+	 must be a subscription
+	
+	"""
+	querySubscribe(in: DataInput): Data @Query
+}
