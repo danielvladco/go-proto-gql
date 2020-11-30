@@ -1,0 +1,9 @@
+schema:
+  - pb/options.graphqls
+
+exec:
+  filename: gql/options/generated.go
+  package: options
+
+autobind:
+  - "github.com/danielvladco/go-proto-gql/example/codegen/pb"
