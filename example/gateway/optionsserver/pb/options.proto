@@ -1,6 +1,6 @@
 syntax = "proto3";
-package pb;
-option go_package = "github.com/danielvladco/go-proto-gql/example;pb";
+package optionsserver;
+option go_package = "github.com/danielvladco/go-proto-gql/gateway/optionsserver/pb;optionsserver";
 
 import "pb/graphql.proto";
 

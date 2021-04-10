@@ -1,22 +1,33 @@
-.PHONY: generate start
-
+.PHONY: start
 start: generate
 	go run ./main.go
 
-generate: gql/constructs/generated.go gql/options/generated.go
+.PHONY: generate
+generate: gen-gqlgen-constructs gen-gqlgen-options
 
-pb/%.gqlgen.pb.go: pb/%.proto pb/%_grpc.pb.go pb/%.pb.go
+.PHONY: gen-gogql-%
+gen-gogql-%:
 	protoc --gogql_out=paths=source_relative:. -I . -I ../../ ./pb/$*.proto
 
-pb/%_grpc.pb.go: pb/%.proto pb/%.pb.go
+.PHONY: gen-pb-grpc-%
+gen-pb-grpc-%:
 	protoc --go-grpc_out=paths=source_relative:. -I . -I ../../ ./pb/$*.proto
 
-pb/%.pb.go: pb/%.proto
+.PHONY: gen-pb-%
+gen-pb-%:
 	protoc --go_out=paths=source_relative:. -I . -I ../../ ./pb/$*.proto
 
-pb/%.graphqls: pb/%.proto
+.PHONY: gen-gql-%
+gen-gql-%:
 	protoc --gql_out=svc=true:. -I . -I ../../ ./pb/$*.proto
 
-gql/%/generated.go: pb/%.graphqls pb/%.gqlgen.pb.go
+.PHONY: gen-gqlgen-%
+gen-gqlgen-%: gen-gql-% gen-gogql-% gen-pb-% gen-pb-grpc-%
 	gqlgen --config ./gqlgen-$*.yaml
 
+.PHONY: clean-%
+clean-%:
+	rm -rf pb/$*.gqlgen.pb.go pb/$*_grpc.pb.go pb/$*.pb.go pb/$*.graphqls gql/$*/generated.go
+
+.PHONY: clean
+clean: clean-constructs clean-options
