@@ -230,11 +230,7 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 	return
 }
 
-func (s *SchemaDescriptor) CreateObjects(msg *desc.MessageDescriptor, input bool) (*ObjectDescriptor, error) {
-	return s.createObjects(msg, input, NewCallstack())
-}
-
-func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstack Callstack) (obj *ObjectDescriptor, err error) {
+func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *ObjectDescriptor, err error) {
 	// the case if trying to resolve a primitive as a object. In this case we just return nil
 	if d == nil {
 		return
@@ -260,6 +256,8 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 			return obj, nil
 		}
 		if IsAny(dd) {
+			//TODO find a better way to handle any types
+			delete(s.createdObjects, createdObjectKey{d, input})
 			any := s.createScalar(s.uniqueName(dd, false), anyTypeDescription)
 			return any, nil
 		}
@@ -283,7 +281,7 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 						continue
 					}
 					outputOneofRegistrar[oneof] = struct{}{}
-					field, err := s.createUnion(oneof, callstack)
+					field, err := s.createUnion(oneof)
 					if err != nil {
 						return nil, err
 					}
@@ -308,7 +306,7 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 				})
 			}
 
-			fieldObj, err := s.createObjects(resolveFieldType(df), input, callstack)
+			fieldObj, err := s.CreateObjects(resolveFieldType(df), input)
 			if err != nil {
 				return nil, err
 			}
@@ -575,10 +573,10 @@ func (s *SchemaDescriptor) createScalar(name string, description string) *Object
 	return obj
 }
 
-func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, callstack Callstack) (*FieldDescriptor, error) {
+func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescriptor, error) {
 	var types []string
 	for _, choice := range oneof.GetChoices() {
-		obj, err := s.createObjects(resolveFieldType(choice), false, callstack)
+		obj, err := s.CreateObjects(resolveFieldType(choice), false)
 		if err != nil {
 			return nil, err
 		}
