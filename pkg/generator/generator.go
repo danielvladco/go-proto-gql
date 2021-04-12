@@ -13,6 +13,15 @@ import (
 	gqlpb "github.com/danielvladco/go-proto-gql/pb"
 )
 
+const (
+	fieldPrefix        = "Field"
+	inputSuffix        = "Input"
+	typeSep            = "_"
+	packageSep         = "."
+	anyTypeDescription = "Any is any json type"
+	scalarBytes        = "Bytes"
+)
+
 func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool) (schemas SchemaDescriptorList, _ error) {
 	if mergeSchemas {
 		schema := NewSchemaDescriptor(genServiceDesc)
@@ -183,10 +192,18 @@ func (s *SchemaDescriptor) GetQuery() *RootDefinition {
 // make name be unique
 // just create a map and register every name
 func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name string) {
+	var collisionPrefix string
+	var suffix string
 	if _, ok := d.(*desc.MessageDescriptor); input && ok {
-		name = strings.Title(CamelCaseSlice(strings.Split(strings.TrimPrefix(d.GetFullyQualifiedName(), d.GetFile().GetPackage()+"."), ".")) + "Input")
+		suffix = inputSuffix
+	}
+	name = strings.Title(CamelCaseSlice(strings.Split(strings.TrimPrefix(d.GetFullyQualifiedName(), d.GetFile().GetPackage()+packageSep), packageSep)) + suffix)
+
+	if _, ok := d.(*desc.FieldDescriptor); ok {
+		collisionPrefix = fieldPrefix
+		name = CamelCaseSlice(strings.Split(strings.Trim(d.GetParent().GetName()+packageSep+strings.Title(d.GetName()), packageSep), packageSep))
 	} else {
-		name = strings.Title(CamelCaseSlice(strings.Split(strings.TrimPrefix(d.GetFullyQualifiedName(), d.GetFile().GetPackage()+"."), ".")))
+		collisionPrefix = CamelCaseSlice(strings.Split(d.GetFile().GetPackage(), packageSep))
 	}
 
 	d2, ok := s.reservedNames[name]
@@ -203,10 +220,10 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 			break
 		}
 		if uniqueSuffix == 0 {
-			name = CamelCaseSlice(strings.Split(d.GetFile().GetPackage(), ".")) + "_" + originalName
+			name = collisionPrefix + typeSep + originalName
 			continue
 		}
-		name = CamelCaseSlice(strings.Split(d.GetFile().GetPackage(), ".")) + "_" + originalName + strconv.Itoa(uniqueSuffix)
+		name = collisionPrefix + typeSep + originalName + strconv.Itoa(uniqueSuffix)
 	}
 
 	s.reservedNames[name] = d
@@ -225,18 +242,25 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 	if obj, ok := s.createdObjects[createdObjectKey{d, input}]; ok {
 		return obj, nil
 	}
-	callstack.Push(d) // if add a return statement dont forget to clean stack
-	defer func() {
-		callstack.Pop(d)
-		s.createdObjects[createdObjectKey{d, input}] = obj
-	}()
+
+	obj = &ObjectDescriptor{
+		Definition: &ast.Definition{
+			Description: getDescription(d),
+			Name:        s.uniqueName(d, input),
+			Position:    &ast.Position{},
+		},
+		Descriptor: d,
+	}
+
+	s.createdObjects[createdObjectKey{d, input}] = obj
+
 	switch dd := d.(type) {
 	case *desc.MessageDescriptor:
 		if IsEmpty(dd) {
 			return obj, nil
 		}
 		if IsAny(dd) {
-			any := s.createScalar(s.uniqueName(dd, false), "Any is any json type")
+			any := s.createScalar(s.uniqueName(dd, false), anyTypeDescription)
 			return any, nil
 		}
 
@@ -249,7 +273,7 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 
 		for _, df := range dd.GetFields() {
 			var fieldDirective []*ast.Directive
-			if callstack.Has(df.GetMessageType()) {
+			if df.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE && IsEmpty(df.GetMessageType()) {
 				continue
 			}
 
@@ -284,14 +308,14 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 				})
 			}
 
-			obj, err = s.createObjects(resolveFieldType(df), input, callstack)
+			fieldObj, err := s.createObjects(resolveFieldType(df), input, callstack)
 			if err != nil {
 				return nil, err
 			}
-			if obj == nil && df.GetMessageType() != nil {
+			if fieldObj == nil && df.GetMessageType() != nil {
 				continue
 			}
-			f, err := s.createField(df, obj)
+			f, err := s.createField(df, fieldObj)
 			if err != nil {
 				return nil, err
 			}
@@ -299,28 +323,12 @@ func (s *SchemaDescriptor) createObjects(d desc.Descriptor, input bool, callstac
 			fields = append(fields, f)
 		}
 
-		obj = &ObjectDescriptor{
-			Definition: &ast.Definition{
-				Kind:        kind,
-				Description: getDescription(d),
-				Name:        s.uniqueName(d, input),
-				Fields:      fields.AsGraphql(),
-				Position:    &ast.Position{},
-			},
-			Descriptor: d,
-			fields:     fields,
-		}
+		obj.Definition.Fields = fields.AsGraphql()
+		obj.Definition.Kind = kind
+		obj.fields = fields
 	case *desc.EnumDescriptor:
-		obj = &ObjectDescriptor{
-			Definition: &ast.Definition{
-				Kind:        ast.Enum,
-				Description: getDescription(d),
-				Name:        s.uniqueName(d, input),
-				EnumValues:  enumValues(dd.GetValues()),
-				Position:    &ast.Position{},
-			},
-			Descriptor: d,
-		}
+		obj.Definition.Kind = ast.Enum
+		obj.Definition.EnumValues = enumValues(dd.GetValues())
 	default:
 		panic(fmt.Sprintf("received unexpected value %v of type %T", dd, dd))
 	}
@@ -505,7 +513,7 @@ func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectD
 		fieldAst.Type.NamedType = ScalarFloat
 
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		scalar := s.createScalar("Bytes", "")
+		scalar := s.createScalar(scalarBytes, "")
 		fieldAst.Type.NamedType = scalar.Name
 
 	case descriptor.FieldDescriptorProto_TYPE_INT64,
@@ -583,7 +591,7 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, callstack Ca
 			Definition: &ast.Definition{
 				Kind:        ast.Object,
 				Description: getDescription(f),
-				Name:        CamelCaseSlice(strings.Split(strings.Trim(choice.GetParent().GetName()+"."+strings.Title(f.GetName()), "."), ".")),
+				Name:        s.uniqueName(choice, false),
 				Fields:      ast.FieldList{f.FieldDefinition},
 				Position:    &ast.Position{},
 			},
