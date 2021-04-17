@@ -47,6 +47,7 @@ func main() {
 func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGeneratorResponse_File, err error) {
 	var genServiceDesc bool
 	var merge bool
+	var extension = generator.DefaultExtension
 	for _, param := range strings.Split(req.GetParameter(), ",") {
 		var value string
 		if i := strings.Index(param, "="); i >= 0 {
@@ -61,6 +62,8 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			if merge, err = strconv.ParseBool(value); err != nil {
 				return nil, err
 			}
+		case "ext":
+			extension = strings.Trim(value, ".")
 		}
 	}
 	dd, err := desc.CreateFileDescriptorsFromSet(&descriptor.FileDescriptorSet{
@@ -88,7 +91,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 		protoFileName := schema.FileDescriptors[0].GetName()
 
 		outFiles = append(outFiles, &pluginpb.CodeGeneratorResponse_File{
-			Name:    proto.String(resolveGraphqlFilename(protoFileName, merge)),
+			Name:    proto.String(resolveGraphqlFilename(protoFileName, merge, extension)),
 			Content: proto.String(buff.String()),
 		})
 	}
@@ -96,19 +99,19 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 	return
 }
 
-func resolveGraphqlFilename(protoFileName string, merge bool) string {
+func resolveGraphqlFilename(protoFileName string, merge bool, extension string) string {
 	if merge {
-		gqlFileName := "schema.graphqls"
+		gqlFileName := "schema." + extension
 		absProtoFileName, err := filepath.Abs(protoFileName)
 		if err == nil {
 			protoDirSlice := strings.Split(filepath.Dir(absProtoFileName), string(filepath.Separator))
 			if len(protoDirSlice) > 0 {
-				gqlFileName = protoDirSlice[len(protoDirSlice)-1] + ".graphqls"
+				gqlFileName = protoDirSlice[len(protoDirSlice)-1] + "." + extension
 			}
 		}
 		protoDir, _ := path.Split(protoFileName)
 		return path.Join(protoDir, gqlFileName)
 	}
 
-	return strings.TrimSuffix(protoFileName, path.Ext(protoFileName)) + ".graphqls"
+	return strings.TrimSuffix(protoFileName, path.Ext(protoFileName)) + "." + extension
 }

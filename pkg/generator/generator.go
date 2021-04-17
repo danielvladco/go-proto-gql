@@ -20,6 +20,8 @@ const (
 	packageSep         = "."
 	anyTypeDescription = "Any is any json type"
 	scalarBytes        = "Bytes"
+
+	DefaultExtension = "graphql"
 )
 
 func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool) (schemas SchemaDescriptorList, _ error) {

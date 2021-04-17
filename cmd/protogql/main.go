@@ -28,8 +28,9 @@ func (i *arrayFlags) Set(value string) error {
 var (
 	importPath = arrayFlags{}
 	fileNames  = arrayFlags{}
-	svc        = flag.Bool("svc", false, "")
-	merge      = flag.Bool("merge", false, "")
+	svc        = flag.Bool("svc", false, "Use service annotations for nodes corresponding to a GRPC call")
+	merge      = flag.Bool("merge", false, "Merge all the proto files found in one directory into one graphql file")
+	extension  = flag.String("ext", generator.DefaultExtension, "Extension of the graphql file, Default: '.graphql'")
 )
 
 func main() {
@@ -66,7 +67,7 @@ func main() {
 }
 
 func generateFile(schema *generator.SchemaDescriptor, merge bool) error {
-	sc, err := os.Create(resolveGraphqlFilename(schema.FileDescriptors[0].GetName(), merge))
+	sc, err := os.Create(resolveGraphqlFilename(schema.FileDescriptors[0].GetName(), merge, *extension))
 	if err != nil {
 		return err
 	}
@@ -76,19 +77,19 @@ func generateFile(schema *generator.SchemaDescriptor, merge bool) error {
 	return nil
 }
 
-func resolveGraphqlFilename(protoFileName string, merge bool) string {
+func resolveGraphqlFilename(protoFileName string, merge bool, extension string) string {
 	if merge {
-		gqlFileName := "schema.graphqls"
+		gqlFileName := "schema." + extension
 		absProtoFileName, err := filepath.Abs(protoFileName)
 		if err == nil {
 			protoDirSlice := strings.Split(filepath.Dir(absProtoFileName), string(filepath.Separator))
 			if len(protoDirSlice) > 0 {
-				gqlFileName = protoDirSlice[len(protoDirSlice)-1] + ".graphqls"
+				gqlFileName = protoDirSlice[len(protoDirSlice)-1] + "." + extension
 			}
 		}
 		protoDir, _ := path.Split(protoFileName)
 		return path.Join(protoDir, gqlFileName)
 	}
 
-	return strings.TrimSuffix(protoFileName, path.Ext(protoFileName)) + ".graphqls"
+	return strings.TrimSuffix(protoFileName, path.Ext(protoFileName)) + "." + extension
 }
