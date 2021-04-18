@@ -30,7 +30,7 @@ clean:
 	$(foreach l, ${GO_TOOLS},rm -f ${GOPATH}/bin/$(notdir $(l)))
 
 .PHONY: generate-proto
-generate-proto: tools
+generate-proto:
 	export PATH="$$PATH:$(GOPATH)/bin" && protoc --go_out=paths=source_relative:. ./pb/graphql.proto
 
 .PHONY: install-protoc

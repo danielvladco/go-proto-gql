@@ -27,6 +27,8 @@ type ServiceClient interface {
 	InvalidSubscribe2(ctx context.Context, in *Data, opts ...grpc.CallOption) (Service_InvalidSubscribe2Client, error)
 	InvalidSubscribe3(ctx context.Context, opts ...grpc.CallOption) (Service_InvalidSubscribe3Client, error)
 	PubSub2(ctx context.Context, opts ...grpc.CallOption) (Service_PubSub2Client, error)
+	Ignore(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
+	Name(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
 }
 
 type serviceClient struct {
@@ -289,6 +291,24 @@ func (x *servicePubSub2Client) Recv() (*Data, error) {
 	return m, nil
 }
 
+func (c *serviceClient) Ignore(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error) {
+	out := new(Data)
+	err := c.cc.Invoke(ctx, "/optionsserver.Service/Ignore", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) Name(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error) {
+	out := new(Data)
+	err := c.cc.Invoke(ctx, "/optionsserver.Service/Name", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServiceServer is the server API for Service service.
 // All implementations must embed UnimplementedServiceServer
 // for forward compatibility
@@ -303,6 +323,8 @@ type ServiceServer interface {
 	InvalidSubscribe2(*Data, Service_InvalidSubscribe2Server) error
 	InvalidSubscribe3(Service_InvalidSubscribe3Server) error
 	PubSub2(Service_PubSub2Server) error
+	Ignore(context.Context, *Data) (*Data, error)
+	Name(context.Context, *Data) (*Data, error)
 	mustEmbedUnimplementedServiceServer()
 }
 
@@ -339,6 +361,12 @@ func (UnimplementedServiceServer) InvalidSubscribe3(Service_InvalidSubscribe3Ser
 }
 func (UnimplementedServiceServer) PubSub2(Service_PubSub2Server) error {
 	return status.Errorf(codes.Unimplemented, "method PubSub2 not implemented")
+}
+func (UnimplementedServiceServer) Ignore(context.Context, *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ignore not implemented")
+}
+func (UnimplementedServiceServer) Name(context.Context, *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Name not implemented")
 }
 func (UnimplementedServiceServer) mustEmbedUnimplementedServiceServer() {}
 
@@ -579,6 +607,42 @@ func (x *servicePubSub2Server) Recv() (*Data, error) {
 	return m, nil
 }
 
+func _Service_Ignore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).Ignore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/optionsserver.Service/Ignore",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).Ignore(ctx, req.(*Data))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_Name_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).Name(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/optionsserver.Service/Name",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).Name(ctx, req.(*Data))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Service_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "optionsserver.Service",
 	HandlerType: (*ServiceServer)(nil),
@@ -594,6 +658,14 @@ var _Service_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query1",
 			Handler:    _Service_Query1_Handler,
+		},
+		{
+			MethodName: "Ignore",
+			Handler:    _Service_Ignore_Handler,
+		},
+		{
+			MethodName: "Name",
+			Handler:    _Service_Name_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -636,6 +708,125 @@ var _Service_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
+	Metadata: "optionsserver/pb/options.proto",
+}
+
+// TestClient is the client API for Test service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type TestClient interface {
+	Name(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
+	NewName(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
+}
+
+type testClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewTestClient(cc grpc.ClientConnInterface) TestClient {
+	return &testClient{cc}
+}
+
+func (c *testClient) Name(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error) {
+	out := new(Data)
+	err := c.cc.Invoke(ctx, "/optionsserver.Test/Name", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *testClient) NewName(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error) {
+	out := new(Data)
+	err := c.cc.Invoke(ctx, "/optionsserver.Test/NewName", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TestServer is the server API for Test service.
+// All implementations must embed UnimplementedTestServer
+// for forward compatibility
+type TestServer interface {
+	Name(context.Context, *Data) (*Data, error)
+	NewName(context.Context, *Data) (*Data, error)
+	mustEmbedUnimplementedTestServer()
+}
+
+// UnimplementedTestServer must be embedded to have forward compatible implementations.
+type UnimplementedTestServer struct {
+}
+
+func (UnimplementedTestServer) Name(context.Context, *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Name not implemented")
+}
+func (UnimplementedTestServer) NewName(context.Context, *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NewName not implemented")
+}
+func (UnimplementedTestServer) mustEmbedUnimplementedTestServer() {}
+
+// UnsafeTestServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TestServer will
+// result in compilation errors.
+type UnsafeTestServer interface {
+	mustEmbedUnimplementedTestServer()
+}
+
+func RegisterTestServer(s grpc.ServiceRegistrar, srv TestServer) {
+	s.RegisterService(&_Test_serviceDesc, srv)
+}
+
+func _Test_Name_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TestServer).Name(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/optionsserver.Test/Name",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TestServer).Name(ctx, req.(*Data))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Test_NewName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TestServer).NewName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/optionsserver.Test/NewName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TestServer).NewName(ctx, req.(*Data))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Test_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "optionsserver.Test",
+	HandlerType: (*TestServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Name",
+			Handler:    _Test_Name_Handler,
+		},
+		{
+			MethodName: "NewName",
+			Handler:    _Test_NewName_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "optionsserver/pb/options.proto",
 }
 

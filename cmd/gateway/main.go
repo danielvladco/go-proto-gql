@@ -47,7 +47,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, true, true)
+	gqlDesc, err := generator.NewSchemas(descs, true, true, nil)
 	fatalOnErr(err)
 
 	repo := generator.NewRegistry(gqlDesc)

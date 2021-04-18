@@ -10,6 +10,8 @@ import (
 
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/vektah/gqlparser/v2/formatter"
+	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/pluginpb"
 
 	"github.com/danielvladco/go-proto-gql/pkg/generator"
 )
@@ -26,27 +28,38 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 var (
-	importPath = arrayFlags{}
-	fileNames  = arrayFlags{}
-	svc        = flag.Bool("svc", false, "Use service annotations for nodes corresponding to a GRPC call")
-	merge      = flag.Bool("merge", false, "Merge all the proto files found in one directory into one graphql file")
-	extension  = flag.String("ext", generator.DefaultExtension, "Extension of the graphql file, Default: '.graphql'")
+	importPaths = arrayFlags{}
+	fileNames   = arrayFlags{}
+	svc         = flag.Bool("svc", false, "Use service annotations for nodes corresponding to a GRPC call")
+	merge       = flag.Bool("merge", false, "Merge all the proto files found in one directory into one graphql file")
+	extension   = flag.String("ext", generator.DefaultExtension, "Extension of the graphql file, Default: '.graphql'")
 )
 
 func main() {
-	flag.Var(&importPath, "I", "path")
+	flag.Var(&importPaths, "I", "path")
 	flag.Var(&fileNames, "f", "path")
 	flag.Parse()
 
-	newFileNames, err := protoparse.ResolveFilenames(importPath, fileNames...)
+	newFileNames, err := protoparse.ResolveFilenames(importPaths, fileNames...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	descs, err := protoparse.Parser{ImportPaths: importPath}.ParseFiles(newFileNames...)
+	descs, err := protoparse.Parser{ImportPaths: importPaths}.ParseFiles(newFileNames...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc)
+	var files []*descriptorpb.FileDescriptorProto
+	for _, d := range descs {
+		files = append(files, d.AsFileDescriptorProto())
+	}
+	goref, err := generator.NewGoRef(&pluginpb.CodeGeneratorRequest{
+		FileToGenerate: fileNames,
+		ProtoFile:      files,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, goref)
 	if err != nil {
 		log.Fatal(err)
 	}

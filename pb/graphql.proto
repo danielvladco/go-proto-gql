@@ -8,11 +8,11 @@ import "google/protobuf/descriptor.proto";
 // TODO: Email protobuf-global-extension-registry@google.com to get an extension ID.
 
 extend google.protobuf.MethodOptions {
-    optional Type rpc_type = 65030;
+    optional Rpc rpc = 65030;
 }
 
 extend google.protobuf.ServiceOptions {
-    optional Type svc_type = 65030;
+    optional Svc svc = 65030;
 }
 
 extend google.protobuf.FieldOptions {
@@ -23,6 +23,20 @@ message Field {
     optional bool required = 1;
     optional string params = 2;
     optional string dirs = 3;
+    optional bool ignore = 4;
+    optional string name = 5;
+}
+
+message Rpc {
+    optional Type type = 1;
+    optional bool ignore = 2;
+    optional string name = 3;
+}
+
+message Svc {
+    optional Type type = 1;
+    optional bool ignore = 2;
+    optional string name = 3;
 }
 
 enum Type {

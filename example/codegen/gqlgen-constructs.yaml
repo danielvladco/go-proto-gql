@@ -1,5 +1,5 @@
 schema:
-  - pb/constructs.graphqls
+  - pb/constructs.graphql
 
 exec:
   filename: gql/constructs/generated.go

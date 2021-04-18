@@ -7,7 +7,7 @@ import (
 
 	"github.com/jhump/protoreflect/desc"
 	"github.com/vektah/gqlparser/v2/ast"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	gqlpb "github.com/danielvladco/go-proto-gql/pb"
@@ -20,13 +20,14 @@ const (
 	packageSep         = "."
 	anyTypeDescription = "Any is any json type"
 	scalarBytes        = "Bytes"
+	goFieldDirective   = "goField"
 
 	DefaultExtension = "graphql"
 )
 
-func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool) (schemas SchemaDescriptorList, _ error) {
+func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool, goref GoRef) (schemas SchemaDescriptorList, _ error) {
 	if mergeSchemas {
-		schema := NewSchemaDescriptor(genServiceDesc)
+		schema := NewSchemaDescriptor(genServiceDesc, goref)
 		for _, file := range files {
 			err := generateFile(file, schema)
 			if err != nil {
@@ -38,7 +39,7 @@ func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool)
 	}
 
 	for _, file := range files {
-		schema := NewSchemaDescriptor(genServiceDesc)
+		schema := NewSchemaDescriptor(genServiceDesc, goref)
 		err := generateFile(file, schema)
 		if err != nil {
 			return nil, err
@@ -54,7 +55,15 @@ func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor) error {
 	schema.FileDescriptors = append(schema.FileDescriptors, file)
 
 	for _, svc := range file.GetServices() {
+		svcOpts := GraphqlServiceOptions(svc.AsServiceDescriptorProto().GetOptions())
+		if svcOpts != nil && svcOpts.Ignore != nil && *svcOpts.Ignore {
+			continue
+		}
 		for _, rpc := range svc.GetMethods() {
+			rpcOpts := GraphqlMethodOptions(rpc.AsMethodDescriptorProto().GetOptions())
+			if rpcOpts != nil && rpcOpts.Ignore != nil && *rpcOpts.Ignore {
+				continue
+			}
 			in, err := schema.CreateObjects(rpc.GetInputType(), true)
 			if err != nil {
 				return err
@@ -65,25 +74,18 @@ func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor) error {
 				return err
 			}
 
-			if rpc.IsClientStreaming() && rpc.IsServerStreaming() {
-				schema.GetMutation().addMethod(schema.createMethod(svc, rpc, in, out))
+			if rpc.IsServerStreaming() && rpc.IsClientStreaming() {
+				schema.GetMutation().addMethod(svc, rpc, in, out)
 			}
 
 			if rpc.IsServerStreaming() {
-				schema.GetSubscription().addMethod(schema.createMethod(svc, rpc, in, out))
+				schema.GetSubscription().addMethod(svc, rpc, in, out)
 			} else {
-				switch getMethodType(rpc) {
-				case gqlpb.Type_DEFAULT:
-					switch ttt := getServiceType(svc); ttt {
-					case gqlpb.Type_DEFAULT, gqlpb.Type_MUTATION:
-						schema.GetMutation().addMethod(schema.createMethod(svc, rpc, in, out))
-					case gqlpb.Type_QUERY:
-						schema.GetQuery().addMethod(schema.createMethod(svc, rpc, in, out))
-					}
-				case gqlpb.Type_MUTATION:
-					schema.GetMutation().addMethod(schema.createMethod(svc, rpc, in, out))
+				switch GetRequestType(rpcOpts, svcOpts) {
 				case gqlpb.Type_QUERY:
-					schema.GetQuery().addMethod(schema.createMethod(svc, rpc, in, out))
+					schema.GetQuery().addMethod(svc, rpc, in, out)
+				default:
+					schema.GetMutation().addMethod(svc, rpc, in, out)
 				}
 			}
 		}
@@ -101,7 +103,18 @@ func (s SchemaDescriptorList) AsGraphql() (astSchema []*ast.Schema) {
 	return
 }
 
-func NewSchemaDescriptor(genServiceDesc bool) *SchemaDescriptor {
+func (s SchemaDescriptorList) GetForDescriptor(file *protogen.File) *SchemaDescriptor {
+	for _, schema := range s {
+		for _, d := range schema.FileDescriptors {
+			if d.AsFileDescriptorProto() == file.Proto {
+				return schema
+			}
+		}
+	}
+	return nil
+}
+
+func NewSchemaDescriptor(genServiceDesc bool, goref GoRef) *SchemaDescriptor {
 	return &SchemaDescriptor{
 		Schema: &ast.Schema{
 			Directives: map[string]*ast.DirectiveDefinition{},
@@ -110,6 +123,7 @@ func NewSchemaDescriptor(genServiceDesc bool) *SchemaDescriptor {
 		reservedNames:              graphqlReservedNames,
 		createdObjects:             map[createdObjectKey]*ObjectDescriptor{},
 		generateServiceDescriptors: genServiceDesc,
+		goRef:                      goref,
 	}
 }
 
@@ -130,6 +144,8 @@ type SchemaDescriptor struct {
 	createdObjects map[createdObjectKey]*ObjectDescriptor
 
 	generateServiceDescriptors bool
+
+	goRef GoRef
 }
 
 type createdObjectKey struct {
@@ -171,21 +187,21 @@ func (s *SchemaDescriptor) Objects() []*ObjectDescriptor {
 
 func (s *SchemaDescriptor) GetMutation() *RootDefinition {
 	if s.mutation == nil {
-		s.mutation = NewRootDefinition(Mutation)
+		s.mutation = NewRootDefinition(Mutation, s)
 	}
 	return s.mutation
 }
 
 func (s *SchemaDescriptor) GetSubscription() *RootDefinition {
 	if s.subscription == nil {
-		s.subscription = NewRootDefinition(Subscription)
+		s.subscription = NewRootDefinition(Subscription, s)
 	}
 	return s.subscription
 }
 
 func (s *SchemaDescriptor) GetQuery() *RootDefinition {
 	if s.query == nil {
-		s.query = NewRootDefinition(Query)
+		s.query = NewRootDefinition(Query, s)
 	}
 
 	return s.query
@@ -208,18 +224,14 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 		collisionPrefix = CamelCaseSlice(strings.Split(d.GetFile().GetPackage(), packageSep))
 	}
 
-	d2, ok := s.reservedNames[name]
-	if ok {
-		if d == d2 {
-			return name //fixme
-		}
-	}
-
 	originalName := name
 	for uniqueSuffix := 0; ; uniqueSuffix++ {
-		_, ok := s.reservedNames[name]
+		d2, ok := s.reservedNames[name]
 		if !ok {
 			break
+		}
+		if d2 == d {
+			return name
 		}
 		if uniqueSuffix == 0 {
 			name = collisionPrefix + typeSep + originalName
@@ -272,6 +284,10 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 		outputOneofRegistrar := map[*desc.OneOfDescriptor]struct{}{}
 
 		for _, df := range dd.GetFields() {
+			fieldOpts := GraphqlFieldOptions(df.AsFieldDescriptorProto().GetOptions())
+			if fieldOpts != nil && fieldOpts.Ignore != nil && *fieldOpts.Ignore {
+				continue
+			}
 			var fieldDirective []*ast.Directive
 			if df.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE && IsEmpty(df.GetMessageType()) {
 				continue
@@ -319,7 +335,7 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 			if err != nil {
 				return nil, err
 			}
-			f.Directives = fieldDirective
+			f.Directives = append(f.Directives, fieldDirective...)
 			fields = append(fields, f)
 		}
 
@@ -406,18 +422,100 @@ func (m *MethodDescriptor) GetOutput() *ObjectDescriptor {
 type RootDefinition struct {
 	*ast.Definition
 
-	methods     []*MethodDescriptor
-	methodNames map[string]*MethodDescriptor
+	Parent *SchemaDescriptor
+
+	methods       []*MethodDescriptor
+	reservedNames map[string]ServiceAndMethod
+}
+
+type ServiceAndMethod struct {
+	svc *descriptor.ServiceDescriptorProto
+	rpc *descriptor.MethodDescriptorProto
+}
+
+func (r *RootDefinition) UniqueName(svc *descriptor.ServiceDescriptorProto, rpc *descriptor.MethodDescriptorProto) (name string) {
+	rpcOpts := GraphqlMethodOptions(rpc.GetOptions())
+	svcOpts := GraphqlServiceOptions(svc.GetOptions())
+	if rpcOpts != nil && rpcOpts.Name != nil {
+		name = *rpcOpts.Name
+	} else if svcOpts != nil && svcOpts.Name != nil {
+		if *svcOpts.Name == "" {
+			name = ToLowerFirst(rpc.GetName())
+		} else {
+			name = *svcOpts.Name + strings.Title(rpc.GetName())
+		}
+	} else {
+		name = ToLowerFirst(svc.GetName()) + strings.Title(rpc.GetName())
+	}
+
+	originalName := name
+	for uniqueSuffix := 0; ; uniqueSuffix++ {
+		snm, ok := r.reservedNames[name]
+		if !ok {
+			break
+		}
+		if svc == snm.svc && snm.rpc == rpc {
+			return name
+		}
+		name = originalName + strconv.Itoa(uniqueSuffix)
+	}
+
+	r.reservedNames[name] = ServiceAndMethod{svc, rpc}
+	return
 }
 
 func (r *RootDefinition) Methods() []*MethodDescriptor {
 	return r.methods
 }
 
-func (r *RootDefinition) addMethod(method *MethodDescriptor) {
-	r.methods = append(r.methods, method)
+func (r *RootDefinition) addMethod(svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, in, out *ObjectDescriptor) {
+	var args ast.ArgumentDefinitionList
+
+	if in != nil && (in.Descriptor != nil && !IsEmpty(in.Descriptor.(*desc.MessageDescriptor)) || in.Definition.Kind == ast.Scalar) {
+		args = append(args, &ast.ArgumentDefinition{
+			Name:     "in",
+			Type:     ast.NamedType(in.Name, &ast.Position{}),
+			Position: &ast.Position{},
+		})
+	}
+	objType := ast.NamedType("Boolean", &ast.Position{})
+	if out != nil && (out.Descriptor != nil && !IsEmpty(out.Descriptor.(*desc.MessageDescriptor)) || in.Definition.Kind == ast.Scalar) {
+		objType = ast.NamedType(out.Name, &ast.Position{})
+	}
+
+	svcDir := &ast.DirectiveDefinition{
+		Description: getDescription(svc),
+		Name:        svc.GetName(),
+		Locations:   []ast.DirectiveLocation{ast.LocationFieldDefinition},
+		Position:    &ast.Position{Src: &ast.Source{}},
+	}
+	r.Parent.Schema.Directives[svcDir.Name] = svcDir
+
+	m := &MethodDescriptor{
+		ServiceDescriptor: svc,
+		MethodDescriptor:  rpc,
+		FieldDefinition: &ast.FieldDefinition{
+			Description: getDescription(rpc),
+			Name:        r.UniqueName(svc.AsServiceDescriptorProto(), rpc.AsMethodDescriptorProto()),
+			Arguments:   args,
+			Type:        objType,
+			Position:    &ast.Position{},
+		},
+		input:  in,
+		output: out,
+	}
+	if r.Parent.generateServiceDescriptors {
+		m.Directives = []*ast.Directive{{
+			Name:       svcDir.Name,
+			Position:   &ast.Position{},
+			Definition: svcDir,
+			Location:   svcDir.Locations[0],
+		}}
+	}
+
+	r.methods = append(r.methods, m)
 	// TODO maybe not do it here?
-	r.Definition.Fields = append(r.Definition.Fields, method.FieldDefinition)
+	r.Definition.Fields = append(r.Definition.Fields, m.FieldDefinition)
 }
 
 type rootName string
@@ -428,12 +526,12 @@ const (
 	Subscription rootName = "Subscription"
 )
 
-func NewRootDefinition(name rootName) *RootDefinition {
+func NewRootDefinition(name rootName, parent *SchemaDescriptor) *RootDefinition {
 	return &RootDefinition{Definition: &ast.Definition{
 		Kind:     ast.Object,
 		Name:     string(name),
 		Position: &ast.Position{},
-	}}
+	}, Parent: parent, reservedNames: map[string]ServiceAndMethod{}}
 }
 
 func getDescription(descs ...desc.Descriptor) string {
@@ -454,58 +552,48 @@ func getDescription(descs ...desc.Descriptor) string {
 	return strings.Join(description, "\n")
 }
 
-func (s *SchemaDescriptor) createMethod(svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, in, out *ObjectDescriptor) *MethodDescriptor {
-	var args ast.ArgumentDefinitionList
-	if in != nil && (in.Descriptor != nil && !IsEmpty(in.Descriptor.(*desc.MessageDescriptor)) || in.Definition.Kind == ast.Scalar) {
-		args = append(args, &ast.ArgumentDefinition{
-			Name:     "in",
-			Type:     ast.NamedType(in.Name, &ast.Position{}),
-			Position: &ast.Position{},
-		})
-	}
-	objType := ast.NamedType("Boolean", &ast.Position{})
-	if out != nil && (out.Descriptor != nil && !IsEmpty(out.Descriptor.(*desc.MessageDescriptor)) || in.Definition.Kind == ast.Scalar) {
-		objType = ast.NamedType(out.Name, &ast.Position{})
-	}
-
-	svcDir := &ast.DirectiveDefinition{
-		Description: getDescription(svc),
-		Name:        svc.GetName(),
-		Locations:   []ast.DirectiveLocation{ast.LocationFieldDefinition},
-		Position:    &ast.Position{Src: &ast.Source{}},
-	}
-	s.Schema.Directives[svcDir.Name] = svcDir
-
-	m := &MethodDescriptor{
-		ServiceDescriptor: svc,
-		MethodDescriptor:  rpc,
-		FieldDefinition: &ast.FieldDefinition{
-			Description: getDescription(rpc),
-			Name:        ToLowerFirst(svc.GetName()) + strings.Title(rpc.GetName()),
-			Arguments:   args,
-			Type:        objType,
-			Position:    &ast.Position{},
-		},
-		input:  in,
-		output: out,
-	}
-	if s.generateServiceDescriptors {
-		m.Directives = []*ast.Directive{{
-			Name:       svcDir.Name,
-			Position:   &ast.Position{},
-			Definition: svcDir,
-			Location:   svcDir.Locations[0],
-		}}
-	}
-	return m
-}
-
 func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDescriptor) (_ *FieldDescriptor, err error) {
 	fieldAst := &ast.FieldDefinition{
 		Description: getDescription(field),
 		Name:        ToLowerFirst(CamelCase(field.GetName())),
 		Type:        &ast.Type{Position: &ast.Position{}},
 		Position:    &ast.Position{},
+	}
+	fieldOpts := GraphqlFieldOptions(field.AsFieldDescriptorProto().GetOptions())
+	if fieldOpts != nil && fieldOpts.Name != nil {
+		fieldAst.Name = *fieldOpts.Name
+		directive := &ast.DirectiveDefinition{
+			Name: goFieldDirective,
+			Arguments: []*ast.ArgumentDefinition{{
+				Name:     "forceResolver",
+				Type:     ast.NamedType("Boolean", &ast.Position{}),
+				Position: &ast.Position{},
+			}, {
+				Name:     "name",
+				Type:     ast.NamedType("String", &ast.Position{}),
+				Position: &ast.Position{},
+			}},
+			Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition, ast.LocationFieldDefinition},
+			Position:  &ast.Position{Src: &ast.Source{}},
+		}
+		s.Schema.Directives[directive.Name] = directive
+		if s.goRef != nil {
+			fieldAst.Directives = []*ast.Directive{{
+				Name: directive.Name,
+				Arguments: []*ast.Argument{{
+					Name: "name",
+					Value: &ast.Value{
+						Raw:      s.goRef.FindGoField(field.GetFullyQualifiedName()).GoName,
+						Kind:     ast.StringValue,
+						Position: &ast.Position{},
+					},
+					Position: &ast.Position{},
+				}},
+				Position: &ast.Position{},
+				//ParentDefinition: nil, TODO
+				Definition: directive,
+			}}
+		}
 	}
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
@@ -631,20 +719,10 @@ func isRepeated(field *desc.FieldDescriptor) bool {
 }
 
 func isRequired(field *desc.FieldDescriptor) bool {
-	if v := graphqlFieldOptions(field); v != nil {
+	if v := GraphqlFieldOptions(field.AsFieldDescriptorProto().GetOptions()); v != nil {
 		return v.GetRequired()
 	}
 	return false
-}
-
-func graphqlFieldOptions(field *desc.FieldDescriptor) *gqlpb.Field {
-	if field.GetOptions() != nil {
-		v := proto.GetExtension(field.AsFieldDescriptorProto().GetOptions(), gqlpb.E_Field)
-		if v != nil && v.(*gqlpb.Field) != nil {
-			return v.(*gqlpb.Field)
-		}
-	}
-	return nil
 }
 
 const (

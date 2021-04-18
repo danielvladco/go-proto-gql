@@ -90,6 +90,7 @@ func (r optionsRoot) Subscription() options.SubscriptionResolver {
 
 type optionsMutationQueryResolver struct {
 	*pb.ServiceResolvers
+	*pb.TestResolvers
 	*pb.QueryResolvers
 }
 

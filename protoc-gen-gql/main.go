@@ -10,10 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jhump/protoreflect/desc"
 	"github.com/vektah/gqlparser/v2/formatter"
 	"google.golang.org/protobuf/proto"
-	descriptor "google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 
 	"github.com/danielvladco/go-proto-gql/pkg/generator"
@@ -66,22 +64,16 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			extension = strings.Trim(value, ".")
 		}
 	}
-	dd, err := desc.CreateFileDescriptorsFromSet(&descriptor.FileDescriptorSet{
-		File: req.GetProtoFile(),
-	})
+	descs, err := generator.CreateDescriptorsFromProto(req)
 	if err != nil {
 		return nil, err
 	}
-	var descs []*desc.FileDescriptor
-	for _, d := range dd {
-		for _, filename := range req.FileToGenerate {
-			if filename == d.GetName() {
-				descs = append(descs, d)
-			}
-		}
-	}
 
-	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc)
+	goref, err := generator.NewGoRef(req)
+	if err != nil {
+		return nil, err
+	}
+	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, goref)
 	if err != nil {
 		return nil, err
 	}

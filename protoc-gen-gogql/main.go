@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
+	gqlpb "github.com/danielvladco/go-proto-gql/pb"
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -11,8 +14,21 @@ import (
 )
 
 func main() {
-
-	protogen.Options{}.Run(Generate)
+	var svc = proto.Bool(false)
+	var merge = proto.Bool(false)
+	protogen.Options{ParamFunc: func(name, value string) error {
+		switch name {
+		case "svc":
+			if b, err := strconv.ParseBool(value); err != nil {
+				*svc = b
+			}
+		case "merge":
+			if b, err := strconv.ParseBool(value); err != nil {
+				*merge = b
+			}
+		}
+		return nil
+	}}.Run(Generate(merge, svc))
 }
 
 var (
@@ -22,53 +38,78 @@ var (
 	contextPkg = protogen.GoImportPath("context")
 )
 
-func Generate(p *protogen.Plugin) error {
-
-	for _, file := range p.Files {
-		if !file.Generate {
-			continue
+func Generate(merge, svc *bool) func(*protogen.Plugin) error {
+	return func(p *protogen.Plugin) error {
+		goref, _ := generator.NewGoRef(p.Request)
+		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
+		schemas, err := generator.NewSchemas(descs, *merge, *svc, goref)
+		if err != nil {
+			return err
 		}
-		g := p.NewGeneratedFile(file.GeneratedFilenamePrefix+".gqlgen.pb.go", file.GoImportPath)
-		g.P("package ", file.GoPackageName)
-		//InitFile(file)
-		for _, svc := range file.Services {
-			g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Server }`)
-			for _, rpc := range svc.Methods {
-				// TODO handle streaming
-				if rpc.Desc.IsStreamingClient() || rpc.Desc.IsStreamingServer() {
+		for _, file := range p.Files {
+			if !file.Generate {
+				continue
+			}
+			schema := schemas.GetForDescriptor(file)
+			g := p.NewGeneratedFile(file.GeneratedFilenamePrefix+".gqlgen.pb.go", file.GoImportPath)
+			g.P("package ", file.GoPackageName)
+			//InitFile(file)
+			for svcIndex, svc := range file.Services {
+				svcOpts := generator.GraphqlServiceOptions(svc.Desc.Options())
+				if svcOpts != nil && svcOpts.Ignore != nil && *svcOpts.Ignore {
 					continue
 				}
-
-				//TODO better logic
-				methodName := strings.Replace(generator.CamelCase(string(svc.Desc.Name())+string(rpc.Desc.Name())), "_", "", -1)
-				methodNameSplit := generator.SplitCamelCase(methodName)
-				var methodNameSplitNew []string
-				for _, m := range methodNameSplit {
-					if m == "id" || m == "Id" {
-						m = "ID"
+				g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Server }`)
+				for rpcIndex, rpc := range svc.Methods {
+					rpcOpts := generator.GraphqlMethodOptions(rpc.Desc.Options())
+					if rpcOpts != nil && rpcOpts.Ignore != nil && *rpcOpts.Ignore {
+						continue
 					}
-					methodNameSplitNew = append(methodNameSplitNew, m)
-				}
-				methodName = strings.Join(methodNameSplitNew, "")
+					// TODO handle streaming
+					if rpc.Desc.IsStreamingClient() || rpc.Desc.IsStreamingServer() {
+						continue
+					}
 
-				typeIn := g.QualifiedGoIdent(rpc.Input.GoIdent)
-				typeOut := g.QualifiedGoIdent(rpc.Output.GoIdent)
-				in, inref := ", in *"+typeIn, ", in"
-				if IsEmpty(rpc.Input) {
-					in, inref = "", ", &"+typeIn+"{}"
-				}
-				if IsEmpty(rpc.Output) {
-					g.P("func (s *", svc.GoName, "Resolvers) ", methodName, "(ctx ", contextPkg.Ident("Context"), in, ") (*bool, error) { _, err := s.Service.", rpc.GoName, "(ctx", inref, ")\n return nil, err }")
-				} else {
-					g.P("func (s *", svc.GoName, "Resolvers) ", methodName, "(ctx ", contextPkg.Ident("Context"), in, ") (*", typeOut, ", error) { return s.Service.", rpc.GoName, "(ctx", inref, ") }")
+					methodName := ""
+					switch generator.GetRequestType(rpcOpts, svcOpts) {
+					case gqlpb.Type_QUERY:
+						methodName = schema.GetMutation().UniqueName(file.Proto.Service[svcIndex], file.Proto.Service[svcIndex].Method[rpcIndex])
+					default:
+						methodName = schema.GetMutation().UniqueName(file.Proto.Service[svcIndex], file.Proto.Service[svcIndex].Method[rpcIndex])
+					}
+					methodName = goMethodName(methodName)
+
+					typeIn := g.QualifiedGoIdent(rpc.Input.GoIdent)
+					typeOut := g.QualifiedGoIdent(rpc.Output.GoIdent)
+					in, inref := ", in *"+typeIn, ", in"
+					if IsEmpty(rpc.Input) {
+						in, inref = "", ", &"+typeIn+"{}"
+					}
+					if IsEmpty(rpc.Output) {
+						g.P("func (s *", svc.GoName, "Resolvers) ", methodName, "(ctx ", contextPkg.Ident("Context"), in, ") (*bool, error) { _, err := s.Service.", rpc.GoName, "(ctx", inref, ")\n return nil, err }")
+					} else {
+						g.P("func (s *", svc.GoName, "Resolvers) ", methodName, "(ctx ", contextPkg.Ident("Context"), in, ") (*", typeOut, ", error) { return s.Service.", rpc.GoName, "(ctx", inref, ") }")
+					}
 				}
 			}
-		}
 
-		generateMapsAndOneofs(g, file.Messages)
-		generateEnums(g, file.Enums)
+			generateMapsAndOneofs(g, file.Messages)
+			generateEnums(g, file.Enums)
+		}
+		return nil
 	}
-	return nil
+}
+
+func goMethodName(name string) string {
+	methodNameSplit := generator.SplitCamelCase(name)
+	var methodNameSplitNew []string
+	for _, m := range methodNameSplit {
+		if m == "id" || m == "Id" {
+			m = "ID"
+		}
+		methodNameSplitNew = append(methodNameSplitNew, m)
+	}
+	return strings.ReplaceAll(strings.Title(strings.Join(methodNameSplitNew, "")), "_", "")
 }
 
 // TODO logic for generation in case the package is different than that of generated protobufs
@@ -119,6 +160,10 @@ type `, msg.GoIdent.GoName, ` struct {
 		var mapResolver bool
 		for _, f := range msg.Fields {
 			if f.Message == nil || !f.Message.Desc.IsMapEntry() {
+				continue
+			}
+			fieldOpts := generator.GraphqlFieldOptions(f.Desc.Options())
+			if fieldOpts != nil && fieldOpts.Ignore != nil && *fieldOpts.Ignore {
 				continue
 			}
 			if !mapResolver {
