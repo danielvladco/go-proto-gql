@@ -15,6 +15,18 @@ func (s *ServiceResolvers) ServiceMutate2(ctx context.Context, in *Data) (*Data,
 func (s *ServiceResolvers) ServiceQuery1(ctx context.Context, in *Data) (*Data, error) {
 	return s.Service.Query1(ctx, in)
 }
+func (s *ServiceResolvers) NewName(ctx context.Context, in *Data) (*Data, error) {
+	return s.Service.Name(ctx, in)
+}
+
+type TestResolvers struct{ Service TestServer }
+
+func (s *TestResolvers) Name(ctx context.Context, in *Data) (*Data, error) {
+	return s.Service.Name(ctx, in)
+}
+func (s *TestResolvers) NewName0(ctx context.Context, in *Data) (*Data, error) {
+	return s.Service.NewName(ctx, in)
+}
 
 type QueryResolvers struct{ Service QueryServer }
 

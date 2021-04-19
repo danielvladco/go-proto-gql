@@ -1,6 +1,6 @@
 syntax = "proto3";
-package pb;
-option go_package = "github.com/danielvladco/go-proto-gql/reflect/constructserver;pb";
+package constructsserver;
+option go_package = "github.com/danielvladco/go-proto-gql/gateway/constructsserver/pb;constructsserver";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
@@ -164,10 +164,10 @@ message Ref {
     google.protobuf.Timestamp external = 1;
     Timestamp local_time = 11;
     Baz file = 2;
-    pb.Foo file_msg = 8;
-    .pb.Bar file_enum = 9;
+    constructsserver.Foo file_msg = 8;
+    .constructsserver.Bar file_enum = 9;
     Foo local = 3;
-    .pb.Foo.Foo2 foreign = 4;
+    .constructsserver.Foo.Foo2 foreign = 4;
     Foo.En en1 = 5;
     Foo.Bar.En en2 = 6;
     Foo.Baz.Gz gz = 7;

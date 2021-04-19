@@ -7,30 +7,109 @@ import (
 
 	"github.com/jhump/protoreflect/desc"
 	"google.golang.org/protobuf/proto"
+	descriptor "google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/pluginpb"
 
 	gqlpb "github.com/danielvladco/go-proto-gql/pb"
 )
 
-func getMethodType(rpc *desc.MethodDescriptor) gqlpb.Type {
-	if rpc.GetOptions() != nil {
-		v := proto.GetExtension(rpc.AsMethodDescriptorProto().GetOptions(), gqlpb.E_RpcType)
+func GraphqlMethodOptions(opts proto.Message) *gqlpb.Rpc {
+	if opts != nil {
+		v := proto.GetExtension(opts, gqlpb.E_Rpc)
 		if v != nil {
-			return v.(gqlpb.Type)
+			return v.(*gqlpb.Rpc)
 		}
 	}
+	return nil
+}
 
+func GraphqlServiceOptions(opts proto.Message) *gqlpb.Svc {
+	if opts != nil {
+		v := proto.GetExtension(opts, gqlpb.E_Svc)
+		if v != nil {
+			return v.(*gqlpb.Svc)
+		}
+	}
+	return nil
+}
+
+func GraphqlFieldOptions(opts proto.Message) *gqlpb.Field {
+	if opts != nil {
+		v := proto.GetExtension(opts, gqlpb.E_Field)
+		if v != nil && v.(*gqlpb.Field) != nil {
+			return v.(*gqlpb.Field)
+		}
+	}
+	return nil
+}
+
+// GoCamelCase camel-cases a protobuf name for use as a Go identifier.
+//
+// If there is an interior underscore followed by a lower case letter,
+// drop the underscore and convert the letter to upper case.
+func GoCamelCase(s string) string {
+	// Invariant: if the next letter is lower case, it must be converted
+	// to upper case.
+	// That is, we process a word at a time, where words are marked by _ or
+	// upper case letter. Digits are treated as words.
+	var b []byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c == '.' && i+1 < len(s) && isASCIILower(s[i+1]):
+			// Skip over '.' in ".{{lowercase}}".
+		case c == '.':
+			b = append(b, '_') // convert '.' to '_'
+		case c == '_' && (i == 0 || s[i-1] == '.'):
+			// Convert initial '_' to ensure we start with a capital letter.
+			// Do the same for '_' after '.' to match historic behavior.
+			b = append(b, 'X') // convert '_' to 'X'
+		case c == '_' && i+1 < len(s) && isASCIILower(s[i+1]):
+			// Skip over '_' in "_{{lowercase}}".
+		case isASCIIDigit(c):
+			b = append(b, c)
+		default:
+			// Assume we have a letter now - if not, it's a bogus identifier.
+			// The next word is a sequence of characters that must start upper case.
+			if isASCIILower(c) {
+				c -= 'a' - 'A' // convert lowercase to uppercase
+			}
+			b = append(b, c)
+
+			// Accept lower case sequence that follows.
+			for ; i+1 < len(s) && isASCIILower(s[i+1]); i++ {
+				b = append(b, s[i+1])
+			}
+		}
+	}
+	return string(b)
+}
+
+func GetRequestType(rpcOpts *gqlpb.Rpc, svcOpts *gqlpb.Svc) gqlpb.Type {
+	if rpcOpts != nil && rpcOpts.Type != nil {
+		return *rpcOpts.Type
+	}
+	if svcOpts != nil && svcOpts.Type != nil {
+		return *svcOpts.Type
+	}
 	return gqlpb.Type_DEFAULT
 }
 
-func getServiceType(svc *desc.ServiceDescriptor) gqlpb.Type {
-	if svc.GetOptions() != nil {
-		v := proto.GetExtension(svc.AsServiceDescriptorProto().GetOptions(), gqlpb.E_SvcType)
-		if v != nil {
-			return v.(gqlpb.Type)
+func CreateDescriptorsFromProto(req *pluginpb.CodeGeneratorRequest) (descs []*desc.FileDescriptor, err error) {
+	dd, err := desc.CreateFileDescriptorsFromSet(&descriptor.FileDescriptorSet{
+		File: req.GetProtoFile(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range dd {
+		for _, filename := range req.FileToGenerate {
+			if filename == d.GetName() {
+				descs = append(descs, d)
+			}
 		}
 	}
-
-	return gqlpb.Type_DEFAULT
+	return
 }
 
 // Split splits the camelcase word and returns a list of words. It also

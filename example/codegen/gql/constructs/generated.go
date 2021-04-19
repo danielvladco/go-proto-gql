@@ -1396,7 +1396,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "pb/constructs.graphqls", Input: `directive @Constructs on FIELD_DEFINITION
+	{Name: "pb/constructs.graphql", Input: `directive @Constructs on FIELD_DEFINITION
 directive @Oneof_Oneof1 on INPUT_FIELD_DEFINITION
 directive @Oneof_Oneof2 on INPUT_FIELD_DEFINITION
 directive @Oneof_Oneof3 on INPUT_FIELD_DEFINITION

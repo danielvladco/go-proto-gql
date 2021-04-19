@@ -7,9 +7,9 @@ x-base_go_service: &base_go_service
   working_dir: /go/src/ws
 
 services:
-  constructserver:
+  constructsserver:
     <<: *base_go_service
-    command: go run ./example/gateway/constructserver/main.go
+    command: go run ./example/gateway/constructsserver/main.go
 
   optionsserver:
     <<: *base_go_service

@@ -1,9 +1,12 @@
 schema:
-  - pb/constructs.graphqls
+  - pb/constructs.graphql
 
 exec:
   filename: gql/constructs/generated.go
   package: constructs
+
+model:
+  filename: gql/constructs/model.go
 
 autobind:
   - "github.com/danielvladco/go-proto-gql/example/codegen/pb"

@@ -44,16 +44,19 @@ type ResolverRoot interface {
 type DirectiveRoot struct {
 	Query   func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 	Service func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Test    func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
 	Data struct {
+		Bar     func(childComplexity int) int
 		Double  func(childComplexity int) int
 		Double2 func(childComplexity int) int
 		Foo     func(childComplexity int) int
 		Foo2    func(childComplexity int) int
 		String2 func(childComplexity int) int
 		StringX func(childComplexity int) int
+		String_ func(childComplexity int) int
 	}
 
 	Foo2 struct {
@@ -61,6 +64,9 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		Name                     func(childComplexity int, in *pb.Data) int
+		NewName                  func(childComplexity int, in *pb.Data) int
+		NewName0                 func(childComplexity int, in *pb.Data) int
 		QueryMutate1             func(childComplexity int, in *pb.Data) int
 		ServiceInvalidSubscribe3 func(childComplexity int, in *pb.Data) int
 		ServiceMutate1           func(childComplexity int, in *pb.Data) int
@@ -94,6 +100,9 @@ type MutationResolver interface {
 	ServicePubSub1(ctx context.Context, in *pb.Data) (*pb.Data, error)
 	ServiceInvalidSubscribe3(ctx context.Context, in *pb.Data) (*pb.Data, error)
 	ServicePubSub2(ctx context.Context, in *pb.Data) (*pb.Data, error)
+	NewName(ctx context.Context, in *pb.Data) (*pb.Data, error)
+	Name(ctx context.Context, in *pb.Data) (*pb.Data, error)
+	NewName0(ctx context.Context, in *pb.Data) (*pb.Data, error)
 	QueryMutate1(ctx context.Context, in *pb.Data) (*pb.Data, error)
 }
 type QueryResolver interface {
@@ -125,6 +134,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Data.bars":
+		if e.complexity.Data.Bar == nil {
+			break
+		}
+
+		return e.complexity.Data.Bar(childComplexity), true
 
 	case "Data.double":
 		if e.complexity.Data.Double == nil {
@@ -168,12 +184,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Data.StringX(childComplexity), true
 
+	case "Data.str":
+		if e.complexity.Data.String_ == nil {
+			break
+		}
+
+		return e.complexity.Data.String_(childComplexity), true
+
 	case "Foo2.param1":
 		if e.complexity.Foo2.Param1 == nil {
 			break
 		}
 
 		return e.complexity.Foo2.Param1(childComplexity), true
+
+	case "Mutation.name":
+		if e.complexity.Mutation.Name == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_name_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Name(childComplexity, args["in"].(*pb.Data)), true
+
+	case "Mutation.newName":
+		if e.complexity.Mutation.NewName == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_newName_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.NewName(childComplexity, args["in"].(*pb.Data)), true
+
+	case "Mutation.newName0":
+		if e.complexity.Mutation.NewName0 == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_newName0_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.NewName0(childComplexity, args["in"].(*pb.Data)), true
 
 	case "Mutation.queryMutate1":
 		if e.complexity.Mutation.QueryMutate1 == nil {
@@ -460,8 +519,10 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "pb/options.graphqls", Input: `directive @Query on FIELD_DEFINITION
+	{Name: "pb/options.graphql", Input: `directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
+directive @Test on FIELD_DEFINITION
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 type Data {
 	"""
 	 must be required
@@ -493,6 +554,8 @@ type Data {
 	
 	"""
 	double2: [Float!]
+	bars: String @goField(name: "Bar")
+	str: String @goField(name: "String_")
 }
 input DataInput {
 	"""
@@ -525,6 +588,8 @@ input DataInput {
 	
 	"""
 	double2: [Float!]
+	bars: String @goField(name: "Bar")
+	str: String @goField(name: "String_")
 }
 type Foo2 {
 	param1: String
@@ -555,6 +620,17 @@ type Mutation {
 	servicePubSub1(in: DataInput): Data @Service
 	serviceInvalidSubscribe3(in: DataInput): Data @Service
 	servicePubSub2(in: DataInput): Data @Service
+	newName(in: DataInput): Data @Service
+	"""
+	 expect service name to be "name"
+	
+	"""
+	name(in: DataInput): Data @Test
+	"""
+	 expect service name to be "newName1" since it collides with a name from a different service
+	
+	"""
+	newName0(in: DataInput): Data @Test
 	queryMutate1(in: DataInput): Data @Query
 }
 type Query {
@@ -598,6 +674,51 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_name_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *pb.Data
+	if tmp, ok := rawArgs["in"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("in"))
+		arg0, err = ec.unmarshalODataInput2ᚖgithubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["in"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_newName0_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *pb.Data
+	if tmp, ok := rawArgs["in"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("in"))
+		arg0, err = ec.unmarshalODataInput2ᚖgithubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["in"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_newName_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *pb.Data
+	if tmp, ok := rawArgs["in"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("in"))
+		arg0, err = ec.unmarshalODataInput2ᚖgithubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["in"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_queryMutate1_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1108,6 +1229,70 @@ func (ec *executionContext) _Data_double2(ctx context.Context, field graphql.Col
 	return ec.marshalOFloat2ᚕfloat64ᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Data_bars(ctx context.Context, field graphql.CollectedField, obj *pb.Data) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Data",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Bar, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Data_str(ctx context.Context, field graphql.CollectedField, obj *pb.Data) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Data",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.String_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Foo2_param1(ctx context.Context, field graphql.CollectedField, obj *pb.Foo2) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1468,6 +1653,183 @@ func (ec *executionContext) _Mutation_servicePubSub2(ctx context.Context, field 
 				return nil, errors.New("directive Service is not implemented")
 			}
 			return ec.directives.Service(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*pb.Data); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/danielvladco/go-proto-gql/example/codegen/pb.Data`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*pb.Data)
+	fc.Result = res
+	return ec.marshalOData2ᚖgithubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_newName(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_newName_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().NewName(rctx, args["in"].(*pb.Data))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Service == nil {
+				return nil, errors.New("directive Service is not implemented")
+			}
+			return ec.directives.Service(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*pb.Data); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/danielvladco/go-proto-gql/example/codegen/pb.Data`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*pb.Data)
+	fc.Result = res
+	return ec.marshalOData2ᚖgithubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_name(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_name_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().Name(rctx, args["in"].(*pb.Data))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Test == nil {
+				return nil, errors.New("directive Test is not implemented")
+			}
+			return ec.directives.Test(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*pb.Data); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/danielvladco/go-proto-gql/example/codegen/pb.Data`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*pb.Data)
+	fc.Result = res
+	return ec.marshalOData2ᚖgithubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_newName0(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_newName0_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().NewName0(rctx, args["in"].(*pb.Data))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Test == nil {
+				return nil, errors.New("directive Test is not implemented")
+			}
+			return ec.directives.Test(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -3415,6 +3777,22 @@ func (ec *executionContext) unmarshalInputDataInput(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "bars":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bars"))
+			it.Bar, err = ec.unmarshalOString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "str":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("str"))
+			it.String_, err = ec.unmarshalOString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -3481,6 +3859,10 @@ func (ec *executionContext) _Data(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Data_foo2(ctx, field, obj)
 		case "double2":
 			out.Values[i] = ec._Data_double2(ctx, field, obj)
+		case "bars":
+			out.Values[i] = ec._Data_bars(ctx, field, obj)
+		case "str":
+			out.Values[i] = ec._Data_str(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3543,6 +3925,12 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_serviceInvalidSubscribe3(ctx, field)
 		case "servicePubSub2":
 			out.Values[i] = ec._Mutation_servicePubSub2(ctx, field)
+		case "newName":
+			out.Values[i] = ec._Mutation_newName(ctx, field)
+		case "name":
+			out.Values[i] = ec._Mutation_name(ctx, field)
+		case "newName0":
+			out.Values[i] = ec._Mutation_newName0(ctx, field)
 		case "queryMutate1":
 			out.Values[i] = ec._Mutation_queryMutate1(ctx, field)
 		default:

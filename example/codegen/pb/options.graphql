@@ -1,5 +1,7 @@
 directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
+directive @Test on FIELD_DEFINITION
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 type Data {
 	"""
 	 must be required
@@ -31,6 +33,8 @@ type Data {
 	
 	"""
 	double2: [Float!]
+	bars: String @goField(name: "Bar")
+	str: String @goField(name: "String_")
 }
 input DataInput {
 	"""
@@ -63,6 +67,8 @@ input DataInput {
 	
 	"""
 	double2: [Float!]
+	bars: String @goField(name: "Bar")
+	str: String @goField(name: "String_")
 }
 type Foo2 {
 	param1: String
@@ -93,6 +99,17 @@ type Mutation {
 	servicePubSub1(in: DataInput): Data @Service
 	serviceInvalidSubscribe3(in: DataInput): Data @Service
 	servicePubSub2(in: DataInput): Data @Service
+	newName(in: DataInput): Data @Service
+	"""
+	 expect service name to be "name"
+	
+	"""
+	name(in: DataInput): Data @Test
+	"""
+	 expect service name to be "newName1" since it collides with a name from a different service
+	
+	"""
+	newName0(in: DataInput): Data @Test
 	queryMutate1(in: DataInput): Data @Query
 }
 type Query {

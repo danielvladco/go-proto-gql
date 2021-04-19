@@ -9,23 +9,30 @@ GO_TOOLS := \
 GOPATH := $(shell go env GOPATH)
 
 .PHONY: all
-all: all-tools pb/graphql.pb.go
+all: tools generate-proto
 
-.PHONY: all-tools
-all-tools: ${GOPATH}/bin/protoc go-tools
-
-.PHONY: go-tools
-go-tools: $(foreach l, ${GO_TOOLS}, ${GOPATH}/bin/$(notdir $(l)))
+.PHONY: tools
+tools: install-protoc go-tools
 
 define LIST_RULE
-${GOPATH}/bin/$(notdir $(1)): go.mod
-	go install $(1)
+.PHONY: install-$(notdir $(l))
+install-$(notdir $(l)):
+	go install $(l)
 endef
 
 $(foreach l, $(GO_TOOLS), $(eval $(call LIST_RULE, $(l) )))
 
-pb/graphql.pb.go: ./pb/graphql.proto all-tools
-	protoc --go_out=paths=source_relative:. ./pb/graphql.proto
+.PHONY: go-tools
+go-tools: $(foreach l, ${GO_TOOLS}, install-$(notdir $(l)))
 
-${GOPATH}/bin/protoc:
+.PHONY: clean
+clean:
+	$(foreach l, ${GO_TOOLS},rm -f ${GOPATH}/bin/$(notdir $(l)))
+
+.PHONY: generate-proto
+generate-proto:
+	export PATH="$$PATH:$(GOPATH)/bin" && protoc --go_out=paths=source_relative:. ./pb/graphql.proto
+
+.PHONY: install-protoc
+install-protoc:
 	./scripts/install-protoc.sh
