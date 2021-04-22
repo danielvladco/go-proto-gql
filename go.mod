@@ -19,4 +19,5 @@ require (
 )
 
 replace github.com/99designs/gqlgen v0.13.0 => github.com/danielvladco/gqlgen v0.13.0-inputs
-replace github.com/danielvladco/go-proto-gql => github.com/stmcodes/go-proto-gql
+
+replace github.com/danielvladco/go-proto-gql => github.com/stmcodes/go-proto-gql v0.8.5
