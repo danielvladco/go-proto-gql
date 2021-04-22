@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package test;
+
+option go_package = "test/test";
+import "pb/graphql.proto";
+
+message Hello {
+    string test = 1 [(danielvladco.protobuf.graphql.field) = {dirs: [{name: "Auth"}]}];
+    string asdf = 2;
+    string qwertt = 3 [(danielvladco.protobuf.graphql.field) = {parameter: [{name: "InputName" , type:Integer,value: "12345"}]}];
+
+}
+
+service Service {
+    rpc testQ (Hello) returns (Hello){
+        option (danielvladco.protobuf.graphql.rpc) = {type: QUERY};
+    };
+    rpc testM (Hello) returns (Hello){
+        option (danielvladco.protobuf.graphql.rpc) = {type: MUTATION};
+    };
+}
+service Query {
+    option (danielvladco.protobuf.graphql.svc) = {type: QUERY,dirs[{name:"Auth"},{name:"Auth123"}]};
+    rpc Query1 (Hello) returns (Hello); // must be a query
+    rpc Query2 (Hello) returns (Hello); // must be a query
+    rpc Mutate1 (Hello) returns (Hello) {
+        option (danielvladco.protobuf.graphql.rpc) = {type: MUTATION, dirs:[{name: "DirName",parameter: [{name: "ParamName",type: String, value: "ExampleText"}]}]};
+    }
+    rpc Subscribe (Hello) returns (stream Hello);
+}

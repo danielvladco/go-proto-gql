@@ -1,0 +1,2 @@
+#!/bin/sh
+tee test/input.pb.bin |dlv debug ~/Projects/go-proto-gql/protoc-gen-gql/main.go --listen=":2345" --headless=true --api-version=2 --log | tee test/output.pb.bin

@@ -88,10 +88,39 @@ func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor) error {
 					schema.GetMutation().addMethod(svc, rpc, in, out)
 				}
 			}
+			if rpcOpts != nil && rpcOpts.Dirs != nil {
+				schema.injectDirectives(rpcOpts.Dirs)
+			}
+		}
+		if svcOpts != nil && svcOpts.Dirs != nil {
+			schema.injectDirectives(svcOpts.Dirs)
 		}
 	}
 
 	return nil
+}
+
+func (s *SchemaDescriptor) injectDirectives(dirList []*gqlpb.Dir) {
+	for _, dir := range dirList {
+		if s.Directives[*dir.Name] != nil {
+			continue
+		}
+		arguments := ast.ArgumentDefinitionList{}
+		for _, argdir := range dir.Parameter {
+			argument := &ast.ArgumentDefinition{Name: *argdir.Name, Type: ast.NamedType(argdir.Type.String(), &ast.Position{})}
+			arguments = append(arguments, argument)
+		}
+
+		varDir := &ast.DirectiveDefinition{
+			Name:      *dir.Name,
+			Arguments: arguments,
+			Position:  &ast.Position{Src: &ast.Source{BuiltIn: false}},
+			Locations: []ast.DirectiveLocation{ast.LocationFieldDefinition},
+		}
+		s.Directives[*dir.Name] = varDir
+
+	}
+	return
 }
 
 type SchemaDescriptorList []*SchemaDescriptor
@@ -464,6 +493,51 @@ func (r *RootDefinition) UniqueName(svc *descriptor.ServiceDescriptorProto, rpc 
 	return
 }
 
+func (r *RootDefinition) Directive(svc *descriptor.ServiceDescriptorProto, rpc *descriptor.MethodDescriptorProto) (dirList ast.DirectiveList) {
+	rpcOpts := GraphqlMethodOptions(rpc.GetOptions())
+	svcOpts := GraphqlServiceOptions(svc.GetOptions())
+
+	if rpcOpts != nil && rpcOpts.Dirs != nil {
+		// Check if Directive has Input params example Auth(param1: String)
+		dirList = createDirectiveWithParams(rpcOpts.Dirs)
+
+	} else if svcOpts != nil && svcOpts.Dirs != nil {
+		dirList = createDirectiveWithParams(svcOpts.Dirs)
+	}
+
+	return
+}
+func createDirectiveWithParams(directives []*gqlpb.Dir) (dirList ast.DirectiveList) {
+	// Check if Directive has Input params example Auth(param1: String)
+
+	for _, directive := range directives {
+		dir := &ast.Directive{}
+		if directive.Parameter == nil {
+			dir = &ast.Directive{Name: *directive.Name}
+		} else {
+			argList := ast.ArgumentList{}
+			for _, param := range directive.Parameter {
+				arg := &ast.Argument{Name: *param.Name, Value: &ast.Value{Kind: ast.ValueKind(*param.Type), Raw: *param.Value}}
+				argList = append(argList, arg)
+			}
+
+			dir = &ast.Directive{
+				Name:      *directive.Name,
+				Arguments: argList,
+				Definition: &ast.DirectiveDefinition{
+					Name: *directive.Name,
+					Arguments: ast.ArgumentDefinitionList{
+						&ast.ArgumentDefinition{Name: *directive.Name},
+					},
+				},
+			}
+		}
+
+		dirList = append(dirList, dir)
+	}
+	return dirList
+}
+
 func (r *RootDefinition) Methods() []*MethodDescriptor {
 	return r.methods
 }
@@ -500,6 +574,7 @@ func (r *RootDefinition) addMethod(svc *desc.ServiceDescriptor, rpc *desc.Method
 			Arguments:   args,
 			Type:        objType,
 			Position:    &ast.Position{},
+			Directives:  r.Directive(svc.AsServiceDescriptorProto(), rpc.AsMethodDescriptorProto()),
 		},
 		input:  in,
 		output: out,
@@ -595,6 +670,15 @@ func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectD
 			}}
 		}
 	}
+	if fieldOpts != nil && fieldOpts.Parameter != nil {
+		argList := ast.ArgumentDefinitionList{}
+		for _, param := range fieldOpts.Parameter {
+			arg := &ast.ArgumentDefinition{Name: *param.Name, Type: ast.NamedType(param.Type.String(), &ast.Position{})}
+			argList = append(argList, arg)
+		}
+		fieldAst.Arguments = argList
+	}
+
 	switch field.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
 		descriptor.FieldDescriptorProto_TYPE_FLOAT:

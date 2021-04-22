@@ -1,0 +1,1 @@
+cd protoc-gen-gql && go build -gcflags="all=-N -l" . && cd ..  && protoc --go_out=. --go_opt=paths=source_relative test/test.proto

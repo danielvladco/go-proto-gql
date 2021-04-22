@@ -21,8 +21,8 @@ extend google.protobuf.FieldOptions {
 
 message Field {
     optional bool required = 1;
-    optional string params = 2;
-    optional string dirs = 3;
+    repeated Parameter parameter = 2;
+    repeated Dir dirs = 3;
     optional bool ignore = 4;
     optional string name = 5;
 }
@@ -31,13 +31,39 @@ message Rpc {
     optional Type type = 1;
     optional bool ignore = 2;
     optional string name = 3;
+    repeated Dir dirs = 4;
 }
 
 message Svc {
     optional Type type = 1;
     optional bool ignore = 2;
     optional string name = 3;
+    repeated Dir dirs = 4;
 }
+message Dir {
+    required string name = 1;
+    repeated Parameter parameter = 2;
+}
+message Parameter {
+    required string name = 1;
+    required ParameterType type = 2;
+    optional string value = 3;
+}
+
+// similiar to Graphqltypes see github.com/vektah/gqlparser/ast/value.go
+enum ParameterType {
+    Variable = 0;
+    String = 1;
+    Integer = 2;
+    Float = 3;
+    Block = 4;
+    Boolean = 5;
+    Null = 6;
+    Enum = 7;
+    List = 8;
+    Object = 9;
+}
+
 
 enum Type {
     DEFAULT = 0;

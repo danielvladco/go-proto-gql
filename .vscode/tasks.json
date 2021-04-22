@@ -1,0 +1,44 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "My Task",
+            "command": "protoc --plugin=./protoc-gen-gql/protoc-gen-gql-wrap --gql-wrap_out=. --gql-wrap_opt=paths=source_relative test/*.proto",
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": {
+              "pattern":[
+                {
+                  "regexp": "^([^\\\\s].*)\\\\((\\\\d+,\\\\d+)\\\\):\\\\s*(.*)$",
+                  "file": 1,
+                  "location": 2,
+                  "message": 3
+                }
+              ]
+            },
+            "presentation": {
+              "group": "debug",
+              "echo": true,
+              "panel": "shared",
+              "showReuseMessage": false,
+            }
+        },
+        {
+            "label": "Stop",
+            "type": "shell",
+            "command": "rm -f __debug_bin || exit 0",
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+              "echo": true,
+              "reveal": "never",
+              "focus": false,
+              "panel": "shared",
+              "showReuseMessage": false,
+              "clear": true,
+              "group": "debug"
+            }
+        }
+
+    ]
+}
