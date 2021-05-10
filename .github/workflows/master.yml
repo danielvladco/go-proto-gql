@@ -1,0 +1,42 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.14
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: go build -v .
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1.1.0
+        with:
+          # Username used to log in to a Docker registry. If not set then no login will occur
+          username: danielvladco
+          # Password or personal access token used to log in to a Docker registry. If not set then no login will occur
+          password: ${{ secrets.GITHUB_TOKEN }}
+          # Server address of Docker registry. If not set then will default to Docker Hub
+          registry: docker.pkg.github.com
+          # Docker repository to tag the image with
+          repository: ${{ github.repostitory }}danielvladco/github-ci-cd-workflow/test
+          # Comma-delimited list of tags. These will be added to the registry/repository to form the image's tags
+          tag_with_sha: true
+          tag_with_ref: true
