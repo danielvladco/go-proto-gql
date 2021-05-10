@@ -1,14 +1,14 @@
-package gateway
+package server
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/danielvladco/go-proto-gql/pkg/generator"
-	"github.com/danielvladco/go-proto-gql/pkg/server"
 	"github.com/mitchellh/mapstructure"
 	"github.com/nautilus/gateway"
 	"github.com/nautilus/graphql"
 	"github.com/rs/cors"
-	"net/http"
 )
 
 func Server(cfg *Config) (http.Handler, error) {
@@ -17,7 +17,7 @@ func Server(cfg *Config) (http.Handler, error) {
 		cfg.Playground = &plg
 	}
 
-	caller, descs, err := server.NewReflectCaller(cfg.Grpc)
+	caller, descs, err := NewReflectCaller(cfg.Grpc)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func Server(cfg *Config) (http.Handler, error) {
 	repo := generator.NewRegistry(gqlDesc)
 
 	queryFactory := gateway.QueryerFactory(func(ctx *gateway.PlanningContext, url string) graphql.Queryer {
-		return server.QueryerLogger{server.NewQueryer(repo, caller)}
+		return QueryerLogger{NewQueryer(repo, caller)}
 	})
 	sources := []*graphql.RemoteSchema{{URL: "url1"}}
 	sources[0].Schema = gqlDesc.AsGraphql()[0]

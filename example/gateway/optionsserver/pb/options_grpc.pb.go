@@ -20,6 +20,7 @@ type ServiceClient interface {
 	Mutate1(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
 	Mutate2(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
 	Query1(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
+	Query2(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error)
 	Publish(ctx context.Context, opts ...grpc.CallOption) (Service_PublishClient, error)
 	Subscribe(ctx context.Context, in *Data, opts ...grpc.CallOption) (Service_SubscribeClient, error)
 	PubSub1(ctx context.Context, opts ...grpc.CallOption) (Service_PubSub1Client, error)
@@ -60,6 +61,15 @@ func (c *serviceClient) Mutate2(ctx context.Context, in *Data, opts ...grpc.Call
 func (c *serviceClient) Query1(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error) {
 	out := new(Data)
 	err := c.cc.Invoke(ctx, "/optionsserver.Service/Query1", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) Query2(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Data, error) {
+	out := new(Data)
+	err := c.cc.Invoke(ctx, "/optionsserver.Service/Query2", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -316,6 +326,7 @@ type ServiceServer interface {
 	Mutate1(context.Context, *Data) (*Data, error)
 	Mutate2(context.Context, *Data) (*Data, error)
 	Query1(context.Context, *Data) (*Data, error)
+	Query2(context.Context, *Data) (*Data, error)
 	Publish(Service_PublishServer) error
 	Subscribe(*Data, Service_SubscribeServer) error
 	PubSub1(Service_PubSub1Server) error
@@ -340,6 +351,9 @@ func (UnimplementedServiceServer) Mutate2(context.Context, *Data) (*Data, error)
 }
 func (UnimplementedServiceServer) Query1(context.Context, *Data) (*Data, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query1 not implemented")
+}
+func (UnimplementedServiceServer) Query2(context.Context, *Data) (*Data, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Query2 not implemented")
 }
 func (UnimplementedServiceServer) Publish(Service_PublishServer) error {
 	return status.Errorf(codes.Unimplemented, "method Publish not implemented")
@@ -431,6 +445,24 @@ func _Service_Query1_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServiceServer).Query1(ctx, req.(*Data))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_Query2_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).Query2(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/optionsserver.Service/Query2",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).Query2(ctx, req.(*Data))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -658,6 +690,10 @@ var _Service_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query1",
 			Handler:    _Service_Query1_Handler,
+		},
+		{
+			MethodName: "Query2",
+			Handler:    _Service_Query2_Handler,
 		},
 		{
 			MethodName: "Ignore",

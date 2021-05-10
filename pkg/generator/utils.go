@@ -10,7 +10,7 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 
-	gqlpb "github.com/danielvladco/go-proto-gql/pb"
+	gqlpb "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
 )
 
 func GraphqlMethodOptions(opts proto.Message) *gqlpb.Rpc {
@@ -112,6 +112,22 @@ func CreateDescriptorsFromProto(req *pluginpb.CodeGeneratorRequest) (descs []*de
 	return
 }
 
+func ResolveProtoFilesRecursively(descs []*desc.FileDescriptor) (files FileDescriptors) {
+	for _,f := range descs {
+		files = append(files, ResolveProtoFilesRecursively(f.GetDependencies())...)
+		files = append(files, f)
+	}
+
+	return files
+}
+
+type FileDescriptors []*desc.FileDescriptor
+func (ds FileDescriptors) AsFileDescriptorProto() (files []*descriptor.FileDescriptorProto) {
+	for _, d := range ds {
+		files = append(files, d.AsFileDescriptorProto())
+	}
+	return
+}
 // Split splits the camelcase word and returns a list of words. It also
 // supports digits. Both lower camel case and upper camel case are supported.
 // For more info please check: http://en.wikipedia.org/wiki/CamelCase

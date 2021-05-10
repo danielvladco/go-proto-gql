@@ -6,7 +6,7 @@ import (
 )
 
 type Registry interface {
-	FindMethodByName(name string) *desc.MethodDescriptor
+	FindMethodByName(op ast.Operation, name string) *desc.MethodDescriptor
 	FindObjectByName(name string) *desc.MessageDescriptor
 
 	// Todo maybe find a better way to get ast definition
@@ -16,14 +16,23 @@ type Registry interface {
 
 func NewRegistry(files SchemaDescriptorList) Registry {
 	v := &repository{
-		methodsByName:   map[string]*desc.MethodDescriptor{},
+		methodsByName:   map[ast.Operation]map[string]*desc.MethodDescriptor{},
 		objectsByName:   map[string]*desc.MessageDescriptor{},
 		objectsByFQN:    map[string]*ObjectDescriptor{},
 		gqlFieldsByName: map[desc.Descriptor]map[string]*desc.FieldDescriptor{},
 	}
 	for _, f := range files {
+		v.methodsByName[ast.Mutation] = map[string]*desc.MethodDescriptor{}
 		for _, m := range f.GetMutation().Methods() {
-			v.methodsByName[m.Name] = m.MethodDescriptor
+			v.methodsByName[ast.Mutation][m.Name] = m.MethodDescriptor
+		}
+		v.methodsByName[ast.Query] = map[string]*desc.MethodDescriptor{}
+		for _, m := range f.GetQuery().Methods() {
+			v.methodsByName[ast.Query][m.Name] = m.MethodDescriptor
+		}
+		v.methodsByName[ast.Subscription] = map[string]*desc.MethodDescriptor{}
+		for _, m := range f.GetSubscription().Methods() {
+			v.methodsByName[ast.Subscription][m.Name] = m.MethodDescriptor
 		}
 	}
 	for _, f := range files {
@@ -46,14 +55,14 @@ func NewRegistry(files SchemaDescriptorList) Registry {
 type repository struct {
 	files SchemaDescriptorList
 
-	methodsByName   map[string]*desc.MethodDescriptor
+	methodsByName   map[ast.Operation]map[string]*desc.MethodDescriptor
 	objectsByName   map[string]*desc.MessageDescriptor
 	objectsByFQN    map[string]*ObjectDescriptor
 	gqlFieldsByName map[desc.Descriptor]map[string]*desc.FieldDescriptor
 }
 
-func (r repository) FindMethodByName(name string) *desc.MethodDescriptor {
-	m, _ := r.methodsByName[name]
+func (r repository) FindMethodByName(op ast.Operation, name string) *desc.MethodDescriptor {
+	m, _ := r.methodsByName[op][name]
 	return m
 }
 

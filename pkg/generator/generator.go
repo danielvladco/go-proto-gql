@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	gqlpb "github.com/danielvladco/go-proto-gql/pb"
+	gqlpb "github.com/danielvladco/go-proto-gql/pb/danielvladco/protobuf"
 )
 
 const (
@@ -25,10 +25,18 @@ const (
 	DefaultExtension = "graphql"
 )
 
-func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool, goref GoRef) (schemas SchemaDescriptorList, _ error) {
+func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, _ error) {
+	var files []*descriptor.FileDescriptorProto
+	for _, d := range descs {
+		files = append(files, d.AsFileDescriptorProto())
+	}
+	goref, err := NewGoRef(plugin)
+	if err != nil {
+		return nil, err
+	}
 	if mergeSchemas {
 		schema := NewSchemaDescriptor(genServiceDesc, goref)
-		for _, file := range files {
+		for _, file := range descs {
 			err := generateFile(file, schema)
 			if err != nil {
 				return nil, err
@@ -38,7 +46,7 @@ func NewSchemas(files []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool,
 		return []*SchemaDescriptor{schema}, nil
 	}
 
-	for _, file := range files {
+	for _, file := range descs {
 		schema := NewSchemaDescriptor(genServiceDesc, goref)
 		err := generateFile(file, schema)
 		if err != nil {

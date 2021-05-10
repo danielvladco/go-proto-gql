@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.14
+          go-version: ^1.16
         id: go
 
       - name: Check out code into the Go module directory
@@ -36,7 +36,7 @@ jobs:
           # Server address of Docker registry. If not set then will default to Docker Hub
           registry: docker.pkg.github.com
           # Docker repository to tag the image with
-          repository: ${{ github.repostitory }}danielvladco/github-ci-cd-workflow/test
+          repository: ${{ github.repostitory }}danielvladco/go-proto-gql/gateway
           # Comma-delimited list of tags. These will be added to the registry/repository to form the image's tags
           tag_with_sha: true
           tag_with_ref: true

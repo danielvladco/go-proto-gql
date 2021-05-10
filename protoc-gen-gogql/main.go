@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	gqlpb "github.com/danielvladco/go-proto-gql/pb"
+	gqlpb "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -40,9 +40,8 @@ var (
 
 func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 	return func(p *protogen.Plugin) error {
-		goref, _ := generator.NewGoRef(p.Request)
 		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
-		schemas, err := generator.NewSchemas(descs, *merge, *svc, goref)
+		schemas, err := generator.NewSchemas(descs, *merge, *svc, p)
 		if err != nil {
 			return err
 		}

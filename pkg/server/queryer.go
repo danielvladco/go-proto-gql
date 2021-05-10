@@ -40,7 +40,7 @@ type QueryerLogger struct {
 func (q QueryerLogger) Query(ctx context.Context, input *graphql.QueryInput, i interface{}) (err error) {
 	startTime := time.Now()
 	err = q.Next.Query(ctx, input, i)
-	log.Printf("[INFO] gql to grpc call took: %fms", float64(time.Since(startTime))/float64(time.Millisecond))
+	log.Printf("[INFO] graphql call took: %fms", float64(time.Since(startTime))/float64(time.Millisecond))
 	return err
 }
 
@@ -55,14 +55,22 @@ func (q *queryer) Query(ctx context.Context, input *graphql.QueryInput, result i
 		}
 		switch op.Operation {
 		case ast.Query:
-			// TODO add parallel execution
-			err = q.resolveSelection(ctx, selection, res, input.Variables)
+			err = q.resolveQuery(ctx, selection, res, input.Variables)
 
 		case ast.Mutation:
-			err = q.resolveSelection(ctx, selection, res, input.Variables)
+			err = q.resolveMutation(ctx, selection, res, input.Variables)
 
 		case ast.Subscription:
-			panic("subscription not implemented")
+			return &graphql.Error{
+				Extensions: map[string]interface{}{"code": "UNIMPLEMENTED"},
+				Message:    "subscription is not supported",
+			}
+		}
+	}
+	if err != nil {
+		return &graphql.Error{
+			Extensions: map[string]interface{}{"code": "UNKNOWN_ERROR"},
+			Message:    err.Error(),
 		}
 	}
 
@@ -75,10 +83,10 @@ func (q *queryer) Query(ctx context.Context, input *graphql.QueryInput, result i
 		return errors.New("result must be addressable (a pointer)")
 	}
 	val.Set(reflect.ValueOf(res))
-	return err
+	return nil
 }
 
-func (q *queryer) resolveSelection(ctx context.Context, selection ast.SelectionSet, res any, vars map[string]interface{}) (err error) {
+func (q *queryer) resolveMutation(ctx context.Context, selection ast.SelectionSet, res any, vars map[string]interface{}) (err error) {
 	for _, ss := range selection {
 		field, ok := ss.(*ast.Field)
 		if !ok {
@@ -88,7 +96,7 @@ func (q *queryer) resolveSelection(ctx context.Context, selection ast.SelectionS
 			res[nameOrAlias(field)] = field.ObjectDefinition.Name
 			continue
 		}
-		res[nameOrAlias(field)], err = q.resolveCall(ctx, field, vars)
+		res[nameOrAlias(field)], err = q.resolveCall(ctx, ast.Mutation, field, vars)
 		if err != nil {
 			return err
 		}
@@ -96,8 +104,56 @@ func (q *queryer) resolveSelection(ctx context.Context, selection ast.SelectionS
 	return
 }
 
-func (q *queryer) resolveCall(ctx context.Context, field *ast.Field, vars map[string]interface{}) (interface{}, error) {
-	method := q.pm.FindMethodByName(field.Name)
+func (q *queryer) resolveQuery(ctx context.Context, selection ast.SelectionSet, res any, vars map[string]interface{}) (err error) {
+	type mapEntry struct {
+		key string
+		val interface{}
+	}
+	errCh := make(chan error, 4)
+	resCh := make(chan mapEntry, 4)
+	for _, ss := range selection {
+		field, ok := ss.(*ast.Field)
+		if !ok {
+			continue
+		}
+		go func(field *ast.Field) {
+			if field.Name == "__typename" {
+				resCh <- mapEntry{
+					key: nameOrAlias(field),
+					val: field.ObjectDefinition.Name,
+				}
+				return
+			}
+			resolvedValue, err := q.resolveCall(ctx, ast.Query, field, vars)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			resCh <- mapEntry{
+				key: nameOrAlias(field),
+				val: resolvedValue,
+			}
+		}(field)
+	}
+	var errs graphql.ErrorList
+	for i := 0; i < len(selection); i++ {
+		select {
+		case r := <-resCh:
+			res[r.key] = r.val
+		case err := <-errCh:
+			errs = append(errs, err)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return
+}
+
+func (q *queryer) resolveCall(ctx context.Context, op ast.Operation, field *ast.Field, vars map[string]interface{}) (interface{}, error) {
+	method := q.pm.FindMethodByName(op, field.Name)
 	if method == nil {
 		return nil, errors.New("method not found")
 	}
@@ -107,7 +163,7 @@ func (q *queryer) resolveCall(ctx context.Context, field *ast.Field, vars map[st
 		return nil, err
 	}
 
-	msg, err := q.c.Call(ctx, method.GetService(), method, inputMsg)
+	msg, err := q.c.Call(ctx, method, inputMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +237,11 @@ func (q *queryer) pbEncode(in *desc.MessageDescriptor, field *ast.Field, vars ma
 			return nil, err
 		}
 
-		inputMsg.SetField(reqDesc, val)
+		if reqDesc.IsRepeated() && reflect.TypeOf(val).Kind() != reflect.Slice {
+			inputMsg.AddRepeatedField(reqDesc, val)
+		} else {
+			inputMsg.SetField(reqDesc, val)
+		}
 	}
 
 	if anyObj != nil {

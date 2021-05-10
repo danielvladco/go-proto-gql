@@ -7,19 +7,19 @@ generate: gen-gqlgen-constructs gen-gqlgen-options
 
 .PHONY: gen-gogql-%
 gen-gogql-%:
-	protoc --gogql_out=paths=source_relative:. -I . -I ../../ ./pb/$*.proto
+	protoc --gogql_out=paths=source_relative:. -I ../../pb ./pb/$*.proto
 
 .PHONY: gen-pb-grpc-%
 gen-pb-grpc-%:
-	protoc --go-grpc_out=paths=source_relative:. -I . -I ../../ ./pb/$*.proto
+	protoc --go-grpc_out=paths=source_relative:. -I ../../pb ./pb/$*.proto
 
 .PHONY: gen-pb-%
 gen-pb-%:
-	protoc --go_out=paths=source_relative:. -I . -I ../../ ./pb/$*.proto
+	protoc --go_out=paths=source_relative:. -I ../../pb ./pb/$*.proto
 
 .PHONY: gen-gql-%
 gen-gql-%:
-	protoc --gql_out=svc=true:. -I . -I ../../ ./pb/$*.proto
+	protoc --gql_out=svc=true:. -I ../../pb ./pb/$*.proto
 
 .PHONY: gen-gqlgen-%
 gen-gqlgen-%: gen-gql-% gen-gogql-% gen-pb-% gen-pb-grpc-%

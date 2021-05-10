@@ -31,7 +31,7 @@ clean:
 
 .PHONY: generate-proto
 generate-proto:
-	export PATH="$$PATH:$(GOPATH)/bin" && protoc --go_out=paths=source_relative:. ./pb/graphql.proto
+	export PATH="$$PATH:$(GOPATH)/bin" && protoc -I ./api/danielvladco/protobuf -I ./api  --go_out=paths=source_relative:./pkg/graphqlpb ./api/danielvladco/protobuf/*.proto
 
 .PHONY: install-protoc
 install-protoc:
