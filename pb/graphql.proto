@@ -19,6 +19,15 @@ extend google.protobuf.FieldOptions {
     optional Field field = 65030;
 }
 
+extend google.protobuf.OneofOptions {
+    optional Oneof oneof = 65030;
+}
+
+message Oneof {
+    optional bool ignore = 4;
+    optional string name = 5;
+}
+
 message Field {
     optional bool required = 1;
     optional string params = 2;
