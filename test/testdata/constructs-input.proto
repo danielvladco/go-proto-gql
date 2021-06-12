@@ -1,5 +1,5 @@
 syntax = "proto3";
-package pb;
+package constructs;
 option go_package = "github.com/danielvladco/go-proto-gql/example;pb";
 
 import "google/protobuf/any.proto";
@@ -160,10 +160,10 @@ message Ref {
   google.protobuf.Timestamp external = 1;
   Timestamp local_time = 11;
   Baz file = 2;
-  pb.Foo file_msg = 8;
-  .pb.Bar file_enum = 9;
+  constructs.Foo file_msg = 8;
+  .constructs.Bar file_enum = 9;
   Foo local = 3;
-  .pb.Foo.Foo2 foreign = 4;
+  .constructs.Foo.Foo2 foreign = 4;
   Foo.En en1 = 5;
   Foo.Bar.En en2 = 6;
   Foo.Baz.Gz gz = 7;

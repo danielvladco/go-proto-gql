@@ -10,8 +10,7 @@ type Tls struct {
 }
 
 type Authentication struct {
-	Insecure *bool `json:"insecure" yaml:"insecure"`
-	Tls      *Tls  `json:"tls" yaml:"tls"`
+	Tls *Tls `json:"tls" yaml:"tls"`
 }
 
 type Service struct {

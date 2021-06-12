@@ -219,7 +219,7 @@ type Mutation {
     constructsScalars_(in: ScalarsInput): Scalars @Constructs
     constructsRepeated_(in: RepeatedInput): Repeated @Constructs
     constructsMaps_(in: MapsInput): Maps @Constructs
-    constructsAny_(in: Any): Pb_Any @Constructs
+    constructsAny_(in: Any): Constructs_Any @Constructs
     constructsEmpty_: Boolean @Constructs
     constructsEmpty2_: Boolean @Constructs
     constructsEmpty3_: Boolean @Constructs
@@ -259,7 +259,7 @@ type Oneof_Param5 {
 type Oneof_Param6 {
     param6: String
 }
-type Pb_Any {
+type Constructs_Any {
     param1: String
 }
 type Query {

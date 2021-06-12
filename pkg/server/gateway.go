@@ -1,14 +1,13 @@
 package server
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
-	"github.com/mitchellh/mapstructure"
 	"github.com/nautilus/gateway"
 	"github.com/nautilus/graphql"
 	"github.com/rs/cors"
+
+	"github.com/danielvladco/go-proto-gql/pkg/generator"
 )
 
 func Server(cfg *Config) (http.Handler, error) {
@@ -35,20 +34,10 @@ func Server(cfg *Config) (http.Handler, error) {
 	sources := []*graphql.RemoteSchema{{URL: "url1"}}
 	sources[0].Schema = gqlDesc.AsGraphql()[0]
 
-	//sc, _ := os.Create("schema.graphql")
-	//defer sc.Close()
-	//formatter.NewFormatter(sc).FormatSchema(sources[0].Schema)
-
 	g, err := gateway.New(sources, gateway.WithQueryerFactory(&queryFactory))
 	if err != nil {
 		return nil, err
 	}
-	result := &graphql.IntrospectionQueryResult{}
-	err = schemaTestLoadQuery(g, graphql.IntrospectionQuery, result, map[string]interface{}{})
-
-	//in, _ := os.Create("introspection.json")
-	//defer in.Close()
-	//_ = json.NewEncoder(in).Encode(result)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/query", g.GraphQLHandler)
@@ -60,43 +49,4 @@ func Server(cfg *Config) (http.Handler, error) {
 		return cors.Default().Handler(handler), nil
 	}
 	return cors.New(*cfg.Cors).Handler(handler), nil
-}
-
-func fatalOnErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func schemaTestLoadQuery(qw *gateway.Gateway, query string, target interface{}, variables map[string]interface{}) error {
-	reqCtx := &gateway.RequestContext{
-		Context:   context.Background(),
-		Query:     query,
-		Variables: variables,
-	}
-	plan, err := qw.GetPlans(reqCtx)
-	if err != nil {
-		return err
-	}
-
-	// executing the introspection query should return a full description of the schema
-	response, err := qw.Execute(reqCtx, plan)
-	if err != nil {
-		return err
-	}
-
-	// massage the map into the structure
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName: "json",
-		Result:  target,
-	})
-	if err != nil {
-		return err
-	}
-	err = decoder.Decode(response)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -218,10 +218,9 @@ func (q *queryer) pbEncode(in *desc.MessageDescriptor, field *ast.Field, vars ma
 		var reqDesc *desc.FieldDescriptor
 		if anyObj != nil {
 			reqDesc = q.pm.FindFieldByName(anyObj, arg.Name)
-			//reqDesc = q.pm.fields[q.p.FieldBack(anyObj.AsDescriptorProto(), arg.Name)]
 		} else {
-			reqDesc = in.FindFieldByName(arg.Name)
-			//reqDesc = q.pm.fields[q.p.FieldBack(in.DescriptorProto, arg.Name)]
+			log.Println("arg.Name", arg.Name)
+			reqDesc = q.pm.FindFieldByName(in, arg.Name)
 		}
 
 		oneof := reqDesc.GetOneOf()

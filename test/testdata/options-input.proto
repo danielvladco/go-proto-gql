@@ -1,8 +1,8 @@
 syntax = "proto3";
-package pb;
+package options;
 option go_package = "github.com/danielvladco/go-proto-gql/example;pb";
 
-import "pb/graphql.proto";
+import "api/danielvladco/protobuf/graphql.proto";
 
 service Service {
     rpc Mutate1 (Data) returns (Data); // must be a mutation

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
 	"github.com/danielvladco/go-proto-gql/pkg/protoparser"
 	"google.golang.org/grpc/credentials"
 	"log"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/danielvladco/go-proto-gql/pkg/reflection"
 )
-
 
 type Grpc struct {
 	Services    []*Service
@@ -30,40 +28,37 @@ type caller struct {
 	serviceStub map[*desc.ServiceDescriptor]grpcdynamic.Stub
 }
 
-func NewReflectCaller(config *Grpc) (Caller, []*desc.FileDescriptor, error) {
-	var descs []*desc.FileDescriptor
+func NewReflectCaller(config *Grpc) (_ Caller, descs []*desc.FileDescriptor, err error) {
 	c := &caller{serviceStub: map[*desc.ServiceDescriptor]grpcdynamic.Stub{}}
 	descsconn := map[*desc.FileDescriptor]*grpc.ClientConn{}
 	for _, e := range config.Services {
 		var options []grpc.DialOption
-		if e.Authentication != nil {
-			if e.Authentication.Insecure != nil && *e.Authentication.Insecure {
-				options = append(options, grpc.WithInsecure())
+		if e.Authentication != nil && e.Authentication.Tls != nil {
+			cred, err := credentials.NewServerTLSFromFile(e.Authentication.Tls.Certificate, e.Authentication.Tls.PrivateKey)
+			if err != nil {
+				return nil, nil, err
 			}
-			if e.Authentication.Tls != nil {
-				cred, err := credentials.NewServerTLSFromFile(e.Authentication.Tls.Certificate, e.Authentication.Tls.PrivateKey)
-				if err != nil {
-					return nil, nil, err
-				}
-				options = append(options, grpc.WithTransportCredentials(cred))
-			}
+			options = append(options, grpc.WithTransportCredentials(cred))
+		} else {
+			options = append(options, grpc.WithInsecure())
 		}
-
 		conn, err := grpc.Dial(e.Address, options...)
 		if err != nil {
 			return nil, nil, err
 		}
 		if e.Reflection {
-			descs, err = reflection.NewClient(conn).ListPackages()
+			newDescs, err := reflection.NewClientWithImportsResolver(conn).ListPackages()
 			if err != nil {
 				return nil, nil, err
 			}
+			descs = append(descs, newDescs...)
 		}
 		if e.ProtoFiles != nil {
-			descs, err = protoparser.Parse(config.ImportPaths, e.ProtoFiles)
+			newDescs, err := protoparser.Parse(config.ImportPaths, e.ProtoFiles)
 			if err != nil {
 				return nil, nil, err
 			}
+			descs = append(descs, newDescs...)
 		}
 		for _, d := range descs {
 			descsconn[d] = conn
@@ -73,7 +68,7 @@ func NewReflectCaller(config *Grpc) (Caller, []*desc.FileDescriptor, error) {
 		}
 	}
 
-	return c, generator.ResolveProtoFilesRecursively(descs), nil
+	return c, descs, nil
 }
 
 func getDeps(file *desc.FileDescriptor) []*desc.FileDescriptor {
