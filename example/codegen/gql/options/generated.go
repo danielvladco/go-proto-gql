@@ -10,6 +10,7 @@ import (
 	"io"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -36,15 +37,18 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Data() DataResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
+	DataInput() DataInputResolver
 }
 
 type DirectiveRoot struct {
-	Query   func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	Service func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	Test    func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Data_Oneof func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Query      func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Service    func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Test       func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -54,9 +58,18 @@ type ComplexityRoot struct {
 		Double2 func(childComplexity int) int
 		Foo     func(childComplexity int) int
 		Foo2    func(childComplexity int) int
+		Oneof3  func(childComplexity int) int
 		String2 func(childComplexity int) int
 		StringX func(childComplexity int) int
 		String_ func(childComplexity int) int
+	}
+
+	DataParam1 struct {
+		Param1 func(childComplexity int) int
+	}
+
+	DataParam2 struct {
+		Param2 func(childComplexity int) int
 	}
 
 	Foo2 struct {
@@ -93,6 +106,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type DataResolver interface {
+	Oneof3(ctx context.Context, obj *pb.Data) (pb.Data_Oneof, error)
+}
 type MutationResolver interface {
 	ServiceMutate1(ctx context.Context, in *pb.Data) (*pb.Data, error)
 	ServiceMutate2(ctx context.Context, in *pb.Data) (*pb.Data, error)
@@ -118,6 +134,11 @@ type SubscriptionResolver interface {
 	ServiceInvalidSubscribe3(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error)
 	ServicePubSub2(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error)
 	QuerySubscribe(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error)
+}
+
+type DataInputResolver interface {
+	Param1(ctx context.Context, obj *pb.Data, data *string) error
+	Param2(ctx context.Context, obj *pb.Data, data *string) error
 }
 
 type executableSchema struct {
@@ -170,6 +191,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Data.Foo2(childComplexity), true
 
+	case "Data.Oneof3":
+		if e.complexity.Data.Oneof3 == nil {
+			break
+		}
+
+		return e.complexity.Data.Oneof3(childComplexity), true
+
 	case "Data.string2":
 		if e.complexity.Data.String2 == nil {
 			break
@@ -190,6 +218,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Data.String_(childComplexity), true
+
+	case "Data_Param1.param1":
+		if e.complexity.DataParam1.Param1 == nil {
+			break
+		}
+
+		return e.complexity.DataParam1.Param1(childComplexity), true
+
+	case "Data_Param2.param2":
+		if e.complexity.DataParam2.Param2 == nil {
+			break
+		}
+
+		return e.complexity.DataParam2.Param2(childComplexity), true
 
 	case "Foo2.param1":
 		if e.complexity.Foo2.Param1 == nil {
@@ -519,7 +561,8 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "pb/options.graphql", Input: `directive @Query on FIELD_DEFINITION
+	{Name: "pb/options.graphql", Input: `directive @Data_Oneof on INPUT_FIELD_DEFINITION
+directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
 directive @Test on FIELD_DEFINITION
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
@@ -556,6 +599,7 @@ type Data {
 	double2: [Float!]
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
+	Oneof3: Data_Oneof
 }
 input DataInput {
 	"""
@@ -590,6 +634,15 @@ input DataInput {
 	double2: [Float!]
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
+	param1: String @Data_Oneof
+	param2: String @Data_Oneof
+}
+union Data_Oneof = Data_Param1 | Data_Param2
+type Data_Param1 {
+	param1: String
+}
+type Data_Param2 {
+	param2: String
 }
 type Foo2 {
 	param1: String
@@ -1280,6 +1333,102 @@ func (ec *executionContext) _Data_str(ctx context.Context, field graphql.Collect
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.String_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Data_Oneof3(ctx context.Context, field graphql.CollectedField, obj *pb.Data) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Data",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Data().Oneof3(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(pb.Data_Oneof)
+	fc.Result = res
+	return ec.marshalOData_Oneof2githubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData_Oneof(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Data_Param1_param1(ctx context.Context, field graphql.CollectedField, obj *pb.Data_Param1) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Data_Param1",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Param1, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Data_Param2_param2(ctx context.Context, field graphql.CollectedField, obj *pb.Data_Param2) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Data_Param2",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Param2, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3793,6 +3942,54 @@ func (ec *executionContext) unmarshalInputDataInput(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "param1":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("param1"))
+			directive0 := func(ctx context.Context) (interface{}, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+			directive1 := func(ctx context.Context) (interface{}, error) {
+				if ec.directives.Data_Oneof == nil {
+					return nil, errors.New("directive Data_Oneof is not implemented")
+				}
+				return ec.directives.Data_Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				if err = ec.resolvers.DataInput().Param1(ctx, &it, data); err != nil {
+					return it, err
+				}
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+		case "param2":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("param2"))
+			directive0 := func(ctx context.Context) (interface{}, error) { return ec.unmarshalOString2ᚖstring(ctx, v) }
+			directive1 := func(ctx context.Context) (interface{}, error) {
+				if ec.directives.Data_Oneof == nil {
+					return nil, errors.New("directive Data_Oneof is not implemented")
+				}
+				return ec.directives.Data_Oneof(ctx, obj, directive0)
+			}
+
+			tmp, err := directive1(ctx)
+			if err != nil {
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
+			if data, ok := tmp.(*string); ok {
+				if err = ec.resolvers.DataInput().Param2(ctx, &it, data); err != nil {
+					return it, err
+				}
+			} else {
+				err := fmt.Errorf(`unexpected type %T from directive, should be *string`, tmp)
+				return it, graphql.ErrorOnPath(ctx, err)
+			}
 		}
 	}
 
@@ -3823,6 +4020,29 @@ func (ec *executionContext) unmarshalInputFoo2Input(ctx context.Context, obj int
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _Data_Oneof(ctx context.Context, sel ast.SelectionSet, obj pb.Data_Oneof) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case pb.Data_Param1:
+		return ec._Data_Param1(ctx, sel, &obj)
+	case *pb.Data_Param1:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Data_Param1(ctx, sel, obj)
+	case pb.Data_Param2:
+		return ec._Data_Param2(ctx, sel, &obj)
+	case *pb.Data_Param2:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Data_Param2(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
@@ -3841,17 +4061,17 @@ func (ec *executionContext) _Data(ctx context.Context, sel ast.SelectionSet, obj
 		case "stringX":
 			out.Values[i] = ec._Data_stringX(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "foo":
 			out.Values[i] = ec._Data_foo(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "double":
 			out.Values[i] = ec._Data_double(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "string2":
 			out.Values[i] = ec._Data_string2(ctx, field, obj)
@@ -3863,6 +4083,65 @@ func (ec *executionContext) _Data(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Data_bars(ctx, field, obj)
 		case "str":
 			out.Values[i] = ec._Data_str(ctx, field, obj)
+		case "Oneof3":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Data_Oneof3(ctx, field, obj)
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var data_Param1Implementors = []string{"Data_Param1", "Data_Oneof"}
+
+func (ec *executionContext) _Data_Param1(ctx context.Context, sel ast.SelectionSet, obj *pb.Data_Param1) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, data_Param1Implementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Data_Param1")
+		case "param1":
+			out.Values[i] = ec._Data_Param1_param1(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var data_Param2Implementors = []string{"Data_Param2", "Data_Oneof"}
+
+func (ec *executionContext) _Data_Param2(ctx context.Context, sel ast.SelectionSet, obj *pb.Data_Param2) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, data_Param2Implementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Data_Param2")
+		case "param2":
+			out.Values[i] = ec._Data_Param2_param2(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4649,6 +4928,13 @@ func (ec *executionContext) unmarshalODataInput2ᚖgithubᚗcomᚋdanielvladco�
 	}
 	res, err := ec.unmarshalInputDataInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOData_Oneof2githubᚗcomᚋdanielvladcoᚋgoᚑprotoᚑgqlᚋexampleᚋcodegenᚋpbᚐData_Oneof(ctx context.Context, sel ast.SelectionSet, v pb.Data_Oneof) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Data_Oneof(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚕfloat64ᚄ(ctx context.Context, v interface{}) ([]float64, error) {

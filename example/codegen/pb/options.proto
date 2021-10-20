@@ -64,6 +64,15 @@ message Data {
     string bar = 7 [(danielvladco.protobuf.graphql.field) = {name: "bars"}];
     string string = 8 [(danielvladco.protobuf.graphql.field) = {name: "str"}];
     string ignore = 9 [(danielvladco.protobuf.graphql.field) = {ignore: true}];
+    oneof Oneof {
+        string param1 = 10;
+        string param2 = 11;
+        option (danielvladco.protobuf.graphql.oneof) = {name: "Oneof3"};
+    }
+    oneof Oneof2 {
+        string param3 = 13;
+        option (danielvladco.protobuf.graphql.oneof) = {ignore: true};
+    }
 }
 
 message Foo2 {
