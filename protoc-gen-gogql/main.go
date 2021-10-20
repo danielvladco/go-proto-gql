@@ -59,7 +59,11 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 				if svcOpts.GetIgnore() {
 					continue
 				}
-				g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Server }`)
+				if svcOpts != nil && svcOpts.Upstream != nil && *svcOpts.Upstream == gqlpb.Upstream_UPSTREAM_CLIENT {
+					g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Client }`)
+				} else {
+					g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Server }`)
+				}
 				for rpcIndex, rpc := range svc.Methods {
 					rpcOpts := generator.GraphqlMethodOptions(rpc.Desc.Options())
 					if rpcOpts.GetIgnore() {
@@ -154,9 +158,9 @@ func generateMapsAndOneofs(g *protogen.GeneratedFile, messages []*protogen.Messa
 			)
 
 			g.P(`
-type `, msg.GoIdent.GoName, `Input = `, msg.GoIdent.GoName, ` 
+type `, msg.GoIdent.GoName, `Input = `, msg.GoIdent.GoName, `
 type `, msg.GoIdent.GoName, ` struct {
-	Key `, keyType, ` 
+	Key `, keyType, `
 	Value `, valType, `
 }
 `)

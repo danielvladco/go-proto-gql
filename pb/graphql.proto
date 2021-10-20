@@ -46,10 +46,17 @@ message Svc {
     optional Type type = 1;
     optional bool ignore = 2;
     optional string name = 3;
+    optional Upstream upstream = 4;
 }
 
 enum Type {
     DEFAULT = 0;
     MUTATION = 1;
     QUERY = 2;
+}
+
+enum Upstream {
+  UPSTREAM_UNSPECIFIED = 0;
+  UPSTREAM_SERVER = 1;
+  UPSTREAM_CLIENT = 2;
 }
