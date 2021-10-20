@@ -56,7 +56,7 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 			//InitFile(file)
 			for svcIndex, svc := range file.Services {
 				svcOpts := generator.GraphqlServiceOptions(svc.Desc.Options())
-				if svcOpts != nil && svcOpts.Ignore != nil && *svcOpts.Ignore {
+				if svcOpts.GetIgnore() {
 					continue
 				}
 				if svcOpts != nil && svcOpts.Upstream != nil && *svcOpts.Upstream == gqlpb.Upstream_UPSTREAM_CLIENT {
@@ -66,7 +66,7 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 				}
 				for rpcIndex, rpc := range svc.Methods {
 					rpcOpts := generator.GraphqlMethodOptions(rpc.Desc.Options())
-					if rpcOpts != nil && rpcOpts.Ignore != nil && *rpcOpts.Ignore {
+					if rpcOpts.GetIgnore() {
 						continue
 					}
 					// TODO handle streaming
@@ -81,7 +81,7 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 					default:
 						methodName = schema.GetMutation().UniqueName(file.Proto.Service[svcIndex], file.Proto.Service[svcIndex].Method[rpcIndex])
 					}
-					methodName = goMethodName(methodName)
+					methodName = goName(methodName)
 
 					typeIn := g.QualifiedGoIdent(rpc.Input.GoIdent)
 					typeOut := g.QualifiedGoIdent(rpc.Output.GoIdent)
@@ -103,12 +103,18 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 		return nil
 	}
 }
+func goResolveName(name, optionName string) string {
+	if optionName == "" {
+		return name
+	}
+	return goName(optionName)
+}
 
-func goMethodName(name string) string {
+func goName(name string) string {
 	methodNameSplit := generator.SplitCamelCase(name)
 	var methodNameSplitNew []string
 	for _, m := range methodNameSplit {
-		if m == "id" || m == "Id" {
+		if m == "Id" {
 			m = "ID"
 		}
 		methodNameSplitNew = append(methodNameSplitNew, m)
@@ -167,7 +173,7 @@ type `, msg.GoIdent.GoName, ` struct {
 				continue
 			}
 			fieldOpts := generator.GraphqlFieldOptions(f.Desc.Options())
-			if fieldOpts != nil && fieldOpts.Ignore != nil && *fieldOpts.Ignore {
+			if fieldOpts.GetIgnore() {
 				continue
 			}
 			if !mapResolver {
@@ -177,7 +183,7 @@ type `, msg.GoIdent.GoName, ` struct {
 			mapResolver = true
 			g.P(`
 
-func (r `, msg.GoIdent.GoName, `Resolvers) `, f.GoName, `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (list []*`, f.Message.GoIdent, `, _ error) {
+func (r `, msg.GoIdent.GoName, `Resolvers) `, goResolveName(f.GoName, fieldOpts.GetName()), `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (list []*`, f.Message.GoIdent, `, _ error) {
 	for k,v := range obj.`, f.GoName, ` {
 		list = append(list, &`, f.Message.GoIdent, `{
 			Key:   k,
@@ -187,7 +193,7 @@ func (r `, msg.GoIdent.GoName, `Resolvers) `, f.GoName, `(_ `, contextPkg.Ident(
 	return
 }
 
-func (m `, msg.GoIdent.GoName, `InputResolvers) `, f.GoName, `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `, data []*`, f.Message.GoIdent, `) error {
+func (m `, msg.GoIdent.GoName, `InputResolvers) `, goResolveName(f.GoName, fieldOpts.GetName()), `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `, data []*`, f.Message.GoIdent, `) error {
 	for _, v := range data {
 		obj.`, f.GoName, `[v.Key] = v.Value
 	}
@@ -198,6 +204,10 @@ func (m `, msg.GoIdent.GoName, `InputResolvers) `, f.GoName, `(_ `, contextPkg.I
 
 		var oneofResolver bool
 		for _, oneof := range msg.Oneofs {
+			oneofOpts := generator.GraphqlOneofOptions(oneof.Desc.Options())
+			if oneofOpts.GetIgnore() {
+				continue
+			}
 			if !oneofResolver {
 				g.P("type ", msg.GoIdent.GoName, "Resolvers struct{}")
 				g.P("type ", msg.GoIdent.GoName, "InputResolvers struct{}")
@@ -217,7 +227,7 @@ func (o `, msg.GoIdent.GoName, `InputResolvers) `, f.GoName, `(_ `, contextPkg.I
 `)
 			}
 			g.P(`
-func (o `, msg.GoIdent.GoName, `Resolvers) `, oneof.GoName, `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (`, oneof.GoIdent, `, error) {
+func (o `, msg.GoIdent.GoName, `Resolvers) `, goResolveName(oneof.GoName, oneofOpts.GetName()), `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (`, oneof.GoIdent, `, error) {
 	return obj.`, oneof.GoName, `, nil
 }`)
 			g.P(`type `, oneof.GoIdent, " interface{}")
@@ -227,14 +237,10 @@ func (o `, msg.GoIdent.GoName, `Resolvers) `, oneof.GoName, `(_ `, contextPkg.Id
 	}
 }
 
-func noUnderscore(s string) string {
-	return strings.ReplaceAll(s, "_", "")
-}
-
-// same isEmpty but for mortals
+//IsEmpty same isEmpty but for mortals
 func IsEmpty(o *protogen.Message) bool { return isEmpty(o, generator.NewCallstack()) }
 
-// make sure objects are fulled with all objects
+//isEmpty make sure objects are fulled with all objects
 func isEmpty(o *protogen.Message, callstack generator.Callstack) bool {
 	callstack.Push(o)
 	defer callstack.Pop(o)

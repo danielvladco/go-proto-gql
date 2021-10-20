@@ -43,6 +43,16 @@ func GraphqlFieldOptions(opts proto.Message) *gqlpb.Field {
 	return nil
 }
 
+func GraphqlOneofOptions(opts proto.Message) *gqlpb.Oneof {
+	if opts != nil {
+		v := proto.GetExtension(opts, gqlpb.E_Oneof)
+		if v != nil && v.(*gqlpb.Oneof) != nil {
+			return v.(*gqlpb.Oneof)
+		}
+	}
+	return nil
+}
+
 // GoCamelCase camel-cases a protobuf name for use as a Go identifier.
 //
 // If there is an interior underscore followed by a lower case letter,

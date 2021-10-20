@@ -294,6 +294,10 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 			}
 
 			if oneof := df.GetOneOf(); oneof != nil {
+				opts := GraphqlOneofOptions(oneof.AsOneofDescriptorProto().GetOptions())
+				if opts.GetIgnore() {
+					continue
+				}
 				if !input {
 					if _, ok := outputOneofRegistrar[oneof]; ok {
 						continue
@@ -701,11 +705,15 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescr
 		Descriptor: oneof,
 	}
 	s.objects = append(s.objects, obj)
-
+	name := ToLowerFirst(CamelCase(oneof.GetName()))
+	opts := GraphqlOneofOptions(oneof.AsOneofDescriptorProto().GetOptions())
+	if opts.GetName() != "" {
+		name = opts.GetName()
+	}
 	return &FieldDescriptor{
 		FieldDefinition: &ast.FieldDefinition{
 			Description: getDescription(oneof),
-			Name:        ToLowerFirst(CamelCase(oneof.GetName())),
+			Name:        name,
 			Type:        ast.NamedType(obj.Name, &ast.Position{}),
 			Position:    &ast.Position{},
 		},

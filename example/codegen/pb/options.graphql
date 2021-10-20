@@ -1,3 +1,4 @@
+directive @Data_Oneof on INPUT_FIELD_DEFINITION
 directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
 directive @Test on FIELD_DEFINITION
@@ -35,6 +36,7 @@ type Data {
 	double2: [Float!]
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
+	Oneof3: Data_Oneof
 }
 input DataInput {
 	"""
@@ -69,6 +71,15 @@ input DataInput {
 	double2: [Float!]
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
+	param1: String @Data_Oneof
+	param2: String @Data_Oneof
+}
+union Data_Oneof = Data_Param1 | Data_Param2
+type Data_Param1 {
+	param1: String
+}
+type Data_Param2 {
+	param2: String
 }
 type Foo2 {
 	param1: String
