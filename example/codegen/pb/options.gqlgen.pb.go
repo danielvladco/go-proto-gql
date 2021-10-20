@@ -19,7 +19,7 @@ func (s *ServiceResolvers) NewName(ctx context.Context, in *Data) (*Data, error)
 	return s.Service.Name(ctx, in)
 }
 
-type TestResolvers struct{ Service TestServer }
+type TestResolvers struct{ Service TestClient }
 
 func (s *TestResolvers) Name(ctx context.Context, in *Data) (*Data, error) {
 	return s.Service.Name(ctx, in)

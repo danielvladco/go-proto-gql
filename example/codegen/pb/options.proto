@@ -41,11 +41,17 @@ service Test {
     rpc Name (Data) returns (Data); // expect service name to be "name"
     rpc NewName (Data) returns (Data); // expect service name to be "newName1" since it collides with a name from a different service
 
-    option (danielvladco.protobuf.graphql.svc) = {name: ""};
+    option (danielvladco.protobuf.graphql.svc) = {
+        name: ""
+        upstream : UPSTREAM_CLIENT
+    }; // expect gqlgen TestResolvers.Service to be a Client not a Server.
 }
 
 service Query {
-    option (danielvladco.protobuf.graphql.svc) = {type: QUERY};
+    option (danielvladco.protobuf.graphql.svc) = {
+        type: QUERY
+        upstream : UPSTREAM_SERVER
+    }; // expect gqlgen QueryResolvers.Service to be a Server not a Client.
     rpc Query1 (Data) returns (Data); // must be a query
     rpc Query2 (Data) returns (Data); // must be a query
     rpc Mutate1 (Data) returns (Data) {
