@@ -6,11 +6,10 @@ require (
 	github.com/99designs/gqlgen v0.13.0
 	github.com/danielvladco/go-proto-gql/pb v0.6.1
 	github.com/golang/protobuf v1.5.2
-	github.com/hexops/gotextdiff v1.0.3
 	github.com/jhump/protoreflect v1.7.1
-	github.com/mitchellh/mapstructure v1.3.0
 	github.com/nautilus/gateway v0.1.4
 	github.com/nautilus/graphql v0.0.9
+	github.com/pmezard/go-difflib v1.0.0
 	github.com/rs/cors v1.7.0
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/vektah/gqlparser/v2 v2.1.0
@@ -24,4 +23,5 @@ require (
 )
 
 replace github.com/99designs/gqlgen v0.13.0 => github.com/danielvladco/gqlgen v0.13.0-inputs
+
 replace github.com/nautilus/graphql v0.0.9 => ../graphql

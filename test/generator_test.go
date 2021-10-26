@@ -3,13 +3,13 @@ package test
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/formatter"
@@ -20,27 +20,19 @@ import (
 	"github.com/danielvladco/go-proto-gql/pkg/protoparser"
 )
 
-var (
-	//go:embed testdata/constructs-expect.graphql
-	constructsExpectedGraphql []byte
-
-	//go:embed testdata/options-expect.graphql
-	optionsExpectedGraphql []byte
-)
-
 func Test_Generator(t *testing.T) {
 	tests := []struct {
-		name      string
-		inputFile string
-		expect    []byte
+		name       string
+		inputFile  string
+		expectFile string
 	}{{
-		name:      "Constructs",
-		inputFile: "testdata/constructs-input.proto",
-		expect:    constructsExpectedGraphql,
+		name:       "Constructs",
+		inputFile:  "testdata/constructs-input.proto",
+		expectFile: "testdata/constructs-expect.graphql",
 	}, {
-		name:      "Options",
-		inputFile: "testdata/options-input.proto",
-		expect:    optionsExpectedGraphql,
+		name:       "Options",
+		inputFile:  "testdata/options-input.proto",
+		expectFile: "testdata/options-expect.graphql",
 	}}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -48,7 +40,6 @@ func Test_Generator(t *testing.T) {
 			absFile, _ := filepath.Abs(file)
 			absDir, _ := filepath.Split(absFile)
 			apiPath := filepath.Join(absDir, "..")
-			fmt.Println(apiPath)
 			descs, err := protoparser.Parse([]string{apiPath, absDir}, []string{tc.inputFile}, protoparser.WithSourceCodeInfo(false))
 			if err != nil {
 				t.Fatal(err)
@@ -64,13 +55,26 @@ func Test_Generator(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			expectedFormattedSchema, _ := gqlparser.LoadSchema(&ast.Source{Input: string(tc.expect)})
-			//if err != nil {
-			//	t.Fatal(err)
-			//}
+			f, err := os.Open(relativeFile(tc.expectFile))
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer f.Close()
+			bb, err := io.ReadAll(f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expectedFormattedSchema, _ := gqlparser.LoadSchema(&ast.Source{Input: string(bb)})
 			compareGraphql(t, gqlDesc[0].AsGraphql(), expectedFormattedSchema)
 		})
 	}
+}
+
+func relativeFile(filename string) string {
+	_, file, _, _ := runtime.Caller(0)
+	dir, _ := filepath.Split(file)
+
+	return filepath.Join(dir, filename)
 }
 
 func compareGraphql(t *testing.T, got, expect *ast.Schema) {
@@ -78,10 +82,17 @@ func compareGraphql(t *testing.T, got, expect *ast.Schema) {
 	actualGraphql := &bytes.Buffer{}
 	formatter.NewFormatter(actualGraphql).FormatSchema(got)
 	formatter.NewFormatter(expectedGraphql).FormatSchema(expect)
-	if actualGraphql.String() != expectedGraphql.String() {
-		t.Errorf("Generated graphql file does not match expectations")
 
-		edits := myers.ComputeEdits("file://constructs-expect.graphql", expectedGraphql.String(), actualGraphql.String())
-		t.Errorf("%s", gotextdiff.ToUnified("expect", "actual", expectedGraphql.String(), edits))
+	if actualGraphql.String() != expectedGraphql.String() {
+		diff := difflib.UnifiedDiff{
+			A:        difflib.SplitLines(expectedGraphql.String()),
+			B:        difflib.SplitLines(actualGraphql.String()),
+			FromFile: "expect",
+			ToFile:   "got",
+			Context:  3,
+		}
+		t.Errorf("Generated graphql file does not match expectations")
+		str, _ := difflib.GetUnifiedDiffString(diff)
+		t.Errorf("%s", str)
 	}
 }

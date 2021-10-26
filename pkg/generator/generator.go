@@ -127,21 +127,21 @@ func (s SchemaDescriptorList) GetForDescriptor(file *protogen.File) *SchemaDescr
 }
 
 func NewSchemaDescriptor(genServiceDesc bool, goref GoRef) *SchemaDescriptor {
-	return &SchemaDescriptor{
-		Schema: &ast.Schema{
-			Directives: map[string]*ast.DirectiveDefinition{},
-			Types:      map[string]*ast.Definition{},
-		},
-		reservedNames:              graphqlReservedNames,
+	sd := &SchemaDescriptor{
+		Directives:                 map[string]*ast.DirectiveDefinition{},
+		reservedNames:              map[string]desc.Descriptor{},
 		createdObjects:             map[createdObjectKey]*ObjectDescriptor{},
 		generateServiceDescriptors: genServiceDesc,
 		goRef:                      goref,
 	}
+	for _, name := range graphqlReservedNames {
+		sd.reservedNames[name] = nil
+	}
+	return sd
 }
 
 type SchemaDescriptor struct {
-	*ast.Schema
-
+	Directives      map[string]*ast.DirectiveDefinition
 	FileDescriptors []*desc.FileDescriptor
 
 	files []*desc.FileDescriptor
@@ -166,31 +166,32 @@ type createdObjectKey struct {
 }
 
 func (s *SchemaDescriptor) AsGraphql() *ast.Schema {
-	queryDef := s.GetQuery().Definition
-	mutationDef := s.GetMutation().Definition
-	subscriptionsDef := s.GetSubscription().Definition
-	s.Schema.Query = queryDef
-	s.Schema.Types["Query"] = queryDef
+	queryDef := *s.GetQuery().Definition
+	mutationDef := *s.GetMutation().Definition
+	subscriptionsDef := *s.GetSubscription().Definition
+	schema := &ast.Schema{Types: map[string]*ast.Definition{}, Directives: s.Directives}
+	schema.Query = &queryDef
+	schema.Types["Query"] = &queryDef
 	if s.query.methods == nil {
-		s.Schema.Query.Fields = append(s.Schema.Query.Fields, &ast.FieldDefinition{
+		schema.Query.Fields = append(schema.Query.Fields, &ast.FieldDefinition{
 			Name: "dummy",
 			Type: ast.NamedType("Boolean", &ast.Position{}),
 		})
 	}
 	if s.mutation.methods != nil {
-		s.Schema.Mutation = mutationDef
-		s.Schema.Types["Mutation"] = mutationDef
+		schema.Mutation = &mutationDef
+		schema.Types["Mutation"] = &mutationDef
 	}
 	if s.subscription.methods != nil {
-		s.Schema.Subscription = subscriptionsDef
-		s.Schema.Types["Subscription"] = subscriptionsDef
+		schema.Subscription = &subscriptionsDef
+		schema.Types["Subscription"] = &subscriptionsDef
 	}
 
 	for _, o := range s.objects {
 		def := o.AsGraphql()
-		s.Schema.Types[def.Name] = def
+		schema.Types[def.Name] = def
 	}
-	return s.Schema
+	return schema
 }
 
 func (s *SchemaDescriptor) Objects() []*ObjectDescriptor {
@@ -326,7 +327,7 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 					Locations:   []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
 					Position:    &ast.Position{Src: &ast.Source{}},
 				}
-				s.Schema.Directives[directive.Name] = directive
+				s.Directives[directive.Name] = directive
 				fieldDirective = append(fieldDirective, &ast.Directive{
 					Name:     directive.Name,
 					Position: &ast.Position{Src: &ast.Source{}},
@@ -501,7 +502,7 @@ func (r *RootDefinition) addMethod(svc *desc.ServiceDescriptor, rpc *desc.Method
 		Locations:   []ast.DirectiveLocation{ast.LocationFieldDefinition},
 		Position:    &ast.Position{Src: &ast.Source{}},
 	}
-	r.Parent.Schema.Directives[svcDir.Name] = svcDir
+	r.Parent.Directives[svcDir.Name] = svcDir
 
 	m := &MethodDescriptor{
 		ServiceDescriptor: svc,
@@ -588,7 +589,7 @@ func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectD
 			Locations: []ast.DirectiveLocation{ast.LocationInputFieldDefinition, ast.LocationFieldDefinition},
 			Position:  &ast.Position{Src: &ast.Source{}},
 		}
-		s.Schema.Directives[directive.Name] = directive
+		s.Directives[directive.Name] = directive
 		if s.goRef != nil {
 			fieldAst.Directives = []*ast.Directive{{
 				Name: directive.Name,
@@ -677,6 +678,7 @@ func (s *SchemaDescriptor) createScalar(name string, description string) *Object
 
 func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescriptor, error) {
 	var types []string
+	var objTypes []*ObjectDescriptor
 	for _, choice := range oneof.GetChoices() {
 		obj, err := s.CreateObjects(resolveFieldType(choice), false)
 		if err != nil {
@@ -701,6 +703,7 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescr
 		}
 		s.objects = append(s.objects, obj)
 		types = append(types, obj.Name)
+		objTypes = append(objTypes, obj)
 	}
 	obj := &ObjectDescriptor{
 		Definition: &ast.Definition{
@@ -711,6 +714,7 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescr
 			Position:    &ast.Position{},
 		},
 		Descriptor: oneof,
+		types:      objTypes,
 	}
 	s.objects = append(s.objects, obj)
 
@@ -745,16 +749,4 @@ const (
 	ScalarID      = "ID"
 )
 
-var graphqlReservedNames = map[string]desc.Descriptor{
-	"__Directive":  nil,
-	"__Type":       nil,
-	"__Field":      nil,
-	"__EnumValue":  nil,
-	"__InputValue": nil,
-	"__Schema":     nil,
-	"Int":          nil,
-	"Float":        nil,
-	"String":       nil,
-	"Boolean":      nil,
-	"ID":           nil,
-}
+var graphqlReservedNames = []string{"__Directive", "__Type", "__Field", "__EnumValue", "__InputValue", "__Schema", "Int", "Float", "String", "Boolean", "ID"}

@@ -22,7 +22,7 @@ type ConstructsClient interface {
 	Scalars_(ctx context.Context, in *Scalars, opts ...grpc.CallOption) (*Scalars, error)
 	Repeated_(ctx context.Context, in *Repeated, opts ...grpc.CallOption) (*Repeated, error)
 	Maps_(ctx context.Context, in *Maps, opts ...grpc.CallOption) (*Maps, error)
-	Any_(ctx context.Context, in *any.Any, opts ...grpc.CallOption) (*Any, error)
+	Any_(ctx context.Context, in *any.Any, opts ...grpc.CallOption) (*any.Any, error)
 	Empty_(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Empty, error)
 	Empty2_(ctx context.Context, in *EmptyRecursive, opts ...grpc.CallOption) (*EmptyNested, error)
 	Empty3_(ctx context.Context, in *Empty3, opts ...grpc.CallOption) (*Empty3, error)
@@ -66,8 +66,8 @@ func (c *constructsClient) Maps_(ctx context.Context, in *Maps, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *constructsClient) Any_(ctx context.Context, in *any.Any, opts ...grpc.CallOption) (*Any, error) {
-	out := new(Any)
+func (c *constructsClient) Any_(ctx context.Context, in *any.Any, opts ...grpc.CallOption) (*any.Any, error) {
+	out := new(any.Any)
 	err := c.cc.Invoke(ctx, "/constructs.Constructs/Any_", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ type ConstructsServer interface {
 	Scalars_(context.Context, *Scalars) (*Scalars, error)
 	Repeated_(context.Context, *Repeated) (*Repeated, error)
 	Maps_(context.Context, *Maps) (*Maps, error)
-	Any_(context.Context, *any.Any) (*Any, error)
+	Any_(context.Context, *any.Any) (*any.Any, error)
 	Empty_(context.Context, *empty.Empty) (*Empty, error)
 	Empty2_(context.Context, *EmptyRecursive) (*EmptyNested, error)
 	Empty3_(context.Context, *Empty3) (*Empty3, error)
@@ -159,7 +159,7 @@ func (UnimplementedConstructsServer) Repeated_(context.Context, *Repeated) (*Rep
 func (UnimplementedConstructsServer) Maps_(context.Context, *Maps) (*Maps, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Maps_ not implemented")
 }
-func (UnimplementedConstructsServer) Any_(context.Context, *any.Any) (*Any, error) {
+func (UnimplementedConstructsServer) Any_(context.Context, *any.Any) (*any.Any, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Any_ not implemented")
 }
 func (UnimplementedConstructsServer) Empty_(context.Context, *empty.Empty) (*Empty, error) {

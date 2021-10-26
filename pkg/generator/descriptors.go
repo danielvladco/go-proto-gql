@@ -12,6 +12,7 @@ type ObjectDescriptor struct {
 	*ast.Definition
 	desc.Descriptor
 
+	types      []*ObjectDescriptor
 	fields     []*FieldDescriptor
 	fieldNames map[string]*FieldDescriptor
 }
@@ -30,6 +31,10 @@ func (o *ObjectDescriptor) IsInput() bool {
 
 func (o *ObjectDescriptor) GetFields() []*FieldDescriptor {
 	return o.fields
+}
+
+func (o *ObjectDescriptor) GetTypes() []*ObjectDescriptor {
+	return o.types
 }
 
 func (o *ObjectDescriptor) IsMessage() bool {

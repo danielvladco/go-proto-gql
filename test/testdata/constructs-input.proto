@@ -10,7 +10,7 @@ service Constructs {
   rpc Scalars_ (Scalars) returns (Scalars); // all possible scalars and same message as input and output
   rpc Repeated_ (Repeated) returns (Repeated); // all scalars messages and enums as repeated
   rpc Maps_ (Maps) returns (Maps); // all possible maps and different messages as input and output
-  rpc Any_ (google.protobuf.Any) returns (Any); // same name different types
+  rpc Any_ (google.protobuf.Any) returns (google.protobuf.Any); // same name different types
   rpc Empty_ (google.protobuf.Empty) returns (Empty); // empty input and empty output
   rpc Empty2_ (EmptyRecursive) returns (EmptyNested); // messages with all empty fields
   rpc Empty3_ (Empty3) returns (Empty3); // messages with all empty fields

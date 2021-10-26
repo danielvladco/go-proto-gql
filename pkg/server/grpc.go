@@ -71,30 +71,9 @@ func NewReflectCaller(config *Grpc) (_ Caller, descs []*desc.FileDescriptor, err
 	return c, descs, nil
 }
 
-func getDeps(file *desc.FileDescriptor) []*desc.FileDescriptor {
-	mp := map[*desc.FileDescriptor]struct{}{}
-	getAllDependencies(file, mp)
-	deps := make([]*desc.FileDescriptor, len(mp))
-	i := 0
-	for dp := range mp {
-		deps[i] = dp
-		i++
-	}
-	return deps
-}
-
-func getAllDependencies(file *desc.FileDescriptor, files map[*desc.FileDescriptor]struct{}) {
-	deps := file.GetDependencies()
-	for _, d := range deps {
-		files[d] = struct{}{}
-		getAllDependencies(d, files)
-	}
-}
-
 func (c caller) Call(ctx context.Context, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error) {
 	startTime := time.Now()
 	res, err := c.serviceStub[rpc.GetService()].InvokeRpc(ctx, rpc, message)
-	rpc.GetService()
 	log.Printf("[INFO] grpc call %q took: %fms", rpc.GetFullyQualifiedName(), float64(time.Since(startTime))/float64(time.Millisecond))
 	return res, err
 }

@@ -23,9 +23,6 @@ input BazInput {
 	param1: String
 }
 scalar Bytes
-type Constructs_Any {
-	param1: String
-}
 type Data {
 	stringX: String!
 	foo: Foo2!
@@ -262,7 +259,7 @@ type Mutation {
 	constructsScalars_(in: ScalarsInput): Scalars
 	constructsRepeated_(in: RepeatedInput): Repeated
 	constructsMaps_(in: MapsInput): Maps
-	constructsAny_(in: Any): Constructs_Any
+	constructsAny_(in: Any): Any
 	constructsEmpty_: Boolean
 	constructsEmpty2_: Boolean
 	constructsEmpty3_: Boolean
