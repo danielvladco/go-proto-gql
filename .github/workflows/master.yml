@@ -22,7 +22,9 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux go build -v ./cmd/gateway
 
       - name: Test and coverage
-        run: go test -v `go list ./... | grep -v example | grep -v tools` -coverprofile=coverage.txt -covermode=atomic -coverpkg=github.com/danielvladco/go-proto-gql/...
+        run: |-
+          go test -v `go list ./... | grep -v example | grep -v tools` -coverprofile=coverage.tmp.txt -covermode=atomic -coverpkg=github.com/danielvladco/go-proto-gql/...
+          coverage.tmp.txt | grep -v .pb.go > coverage.txt
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v1.0.2
