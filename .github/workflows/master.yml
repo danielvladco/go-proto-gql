@@ -17,8 +17,9 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@master
+
       - name: Build
-        run: go build -v .
+        run: CGO_ENABLED=0 GOOS=linux go build -v ./cmd/gateway
 
       - name: Test
         run: go test -v ./...
@@ -33,7 +34,7 @@ jobs:
           # Server address of Docker registry. If not set then will default to Docker Hub
           registry: docker.pkg.github.com
           # Docker repository to tag the image with
-          repository: ${{ github.repostitory }}danielvladco/go-proto-gql/gateway
+          repository: ${{ github.repository }}danielvladco/go-proto-gql/gateway
           # Comma-delimited list of tags. These will be added to the registry/repository to form the image's tags
           tag_with_sha: true
           tag_with_ref: true
