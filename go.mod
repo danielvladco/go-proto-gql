@@ -3,25 +3,21 @@ module github.com/danielvladco/go-proto-gql
 go 1.16
 
 require (
-	github.com/99designs/gqlgen v0.13.0
+	github.com/99designs/gqlgen v0.14.1-0.20211026151442-6c65e8f15389
 	github.com/danielvladco/go-proto-gql/pb v0.6.1
 	github.com/golang/protobuf v1.5.2
 	github.com/jhump/protoreflect v1.7.1
 	github.com/nautilus/gateway v0.1.4
-	github.com/nautilus/graphql v0.0.9
+	github.com/nautilus/graphql v0.0.16
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/rs/cors v1.7.0
 	github.com/sergi/go-diff v1.2.0 // indirect
-	github.com/vektah/gqlparser/v2 v2.1.0
+	github.com/vektah/gqlparser/v2 v2.2.0
 	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect
-	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
-	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/grpc v1.33.2
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.2.8
 )
 
-replace github.com/99designs/gqlgen v0.13.0 => github.com/danielvladco/gqlgen v0.13.0-inputs
-
-replace github.com/nautilus/graphql v0.0.9 => ../graphql
+replace github.com/nautilus/graphql v0.0.16 => github.com/danielvladco/graphql v0.0.17-0.20211026193047-49db7ae08b73
