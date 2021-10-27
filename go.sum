@@ -150,6 +150,8 @@ github.com/nautilus/gateway v0.1.4/go.mod h1:RxuX3aApDc+xYY7FpS75o6wOSsJcOstS9tF
 github.com/nautilus/graphql v0.0.9/go.mod h1:MQDucBpBRbhwZfeE59tS1DFg7VXS3NvwQpLkgHBmQkg=
 github.com/nautilus/graphql v0.0.16 h1:4QKusOU+U6nVd0OrWntToIkNBohw4o0GzIS37bfUmgY=
 github.com/nautilus/graphql v0.0.16/go.mod h1:UYcs/gBtuFrZyX591SuYboby4xFNG9ZkaTYk7BBSRak=
+github.com/nautilus/graphql v0.0.17-0.20211026193643-b9910208b50a h1:Ac5k25OKTubtoG9+i2UqhWElqj5ZxD4oUr8nECaYwwo=
+github.com/nautilus/graphql v0.0.17-0.20211026193643-b9910208b50a/go.mod h1:UYcs/gBtuFrZyX591SuYboby4xFNG9ZkaTYk7BBSRak=
 github.com/nishanths/predeclared v0.0.0-20200524104333-86fad755b4d3 h1:3f0nxAmdj/VoCGN/ijdMy7bj6SBagaqYg1B0hu8clMA=
 github.com/nishanths/predeclared v0.0.0-20200524104333-86fad755b4d3/go.mod h1:nt3d53pc1VYcphSCIaYAJtnPYnr3Zyn8fMq2wvPGPso=
 github.com/opentracing/basictracer-go v1.0.0 h1:YyUAhaEfjoWXclZVJ9sGoNct7j4TVk7lZWlQw5UXuoo=
