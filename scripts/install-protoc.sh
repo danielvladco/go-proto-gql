@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PROTOC_VERSION=${PROTOC_VERSION:-"3.13.0"}
+PROTOC_VERSION=${PROTOC_VERSION:-"3.19.1"}
 OS="linux"
 if [[ $(uname) == "Darwin" ]]; then
   OS="osx"

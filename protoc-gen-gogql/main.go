@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	gqlpb "github.com/danielvladco/go-proto-gql/pb"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/reflect/protoreflect"
-
 	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func main() {
@@ -40,6 +40,7 @@ var (
 
 func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 	return func(p *protogen.Plugin) error {
+		p.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		goref, _ := generator.NewGoRef(p.Request)
 		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
 		schemas, err := generator.NewSchemas(descs, *merge, *svc, goref)
@@ -204,6 +205,11 @@ func (m `, msg.GoIdent.GoName, `InputResolvers) `, goResolveName(f.GoName, field
 
 		var oneofResolver bool
 		for _, oneof := range msg.Oneofs {
+			// IsSynthetic will be true is this is a synthetic oneof. Currently this only occurs in `optional` fields,
+			// which should not be rendered as a standard oneof.
+			if oneof.Desc.IsSynthetic() {
+				continue
+			}
 			oneofOpts := generator.GraphqlOneofOptions(oneof.Desc.Options())
 			if oneofOpts.GetIgnore() {
 				continue

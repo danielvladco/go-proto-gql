@@ -5,12 +5,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/danielvladco/go-proto-gql/pkg/reflection"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"google.golang.org/grpc"
-
-	"github.com/danielvladco/go-proto-gql/pkg/reflection"
+	"google.golang.org/protobuf/proto"
 )
 
 type Caller interface {

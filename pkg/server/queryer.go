@@ -10,16 +10,14 @@ import (
 	"time"
 
 	graphql99 "github.com/99designs/gqlgen/graphql"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/ptypes"
+	"github.com/danielvladco/go-proto-gql/pkg/generator"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/nautilus/graphql"
 	"github.com/vektah/gqlparser/v2/ast"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/anypb"
-
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
 )
 
 type any = map[string]interface{}
@@ -190,7 +188,7 @@ func (q *queryer) pbEncode(in *desc.MessageDescriptor, field *ast.Field, vars ma
 		//typeUrl := anyMsgDesc.FindFieldByName("type_url")
 		//value := anyMsgDesc.FindFieldByName("value")
 		//anyMsg.SetField(typeUrl, anyObj.GetFullyQualifiedName())
-		return ptypes.MarshalAny(inputMsg)
+		return anypb.New(inputMsg)
 	}
 	return inputMsg, nil
 }
@@ -200,31 +198,31 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 
 	switch v := val.(type) {
 	case float64:
-		if reqDesc.GetType() == descriptor.FieldDescriptorProto_TYPE_FLOAT {
+		if reqDesc.GetType() == descriptorpb.FieldDescriptorProto_TYPE_FLOAT {
 			return float32(v), nil
 		}
 	case int64:
 		switch reqDesc.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_INT32,
-			descriptor.FieldDescriptorProto_TYPE_SINT32,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+		case descriptorpb.FieldDescriptorProto_TYPE_INT32,
+			descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+			descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
 			return int32(v), nil
 
-		case descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		case descriptorpb.FieldDescriptorProto_TYPE_UINT32,
+			descriptorpb.FieldDescriptorProto_TYPE_FIXED32:
 			return uint32(v), nil
 
-		case descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		case descriptorpb.FieldDescriptorProto_TYPE_UINT64,
+			descriptorpb.FieldDescriptorProto_TYPE_FIXED64:
 			return uint64(v), nil
-		case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		case descriptorpb.FieldDescriptorProto_TYPE_FLOAT:
 			return float32(v), nil
-		case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 			return float64(v), nil
 		}
 	case string:
 		switch reqDesc.GetType() {
-		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		case descriptorpb.FieldDescriptorProto_TYPE_ENUM:
 			// TODO predefine this
 			enumDesc := reqDesc.GetEnumType()
 			values := map[string]int32{}
@@ -232,7 +230,7 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 				values[v.GetName()] = v.GetNumber()
 			}
 			return values[v], nil
-		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 			bytes, err := base64.StdEncoding.DecodeString(v)
 			if err != nil {
 				return nil, fmt.Errorf("bytes should be a base64 encoded string")
@@ -298,7 +296,7 @@ func (q *queryer) pbValue(val interface{}, reqDesc *desc.FieldDescriptor) (_ int
 			msg.SetField(msgDesc.FindFieldByName(kk), vv2)
 		}
 		if anyTypeDescriptor != nil {
-			return ptypes.MarshalAny(msg)
+			return anypb.New(msg)
 		}
 		return msg, nil
 	}
@@ -426,7 +424,7 @@ func (q *queryer) gqlValue(val interface{}, msgDesc *desc.MessageDescriptor, enu
 		}
 		return vals, nil
 	case *anypb.Any:
-		fqn, err := ptypes.AnyMessageName(v)
+		fqn, err := v.MessageName()
 		if err != nil {
 			return nil, err
 		}
