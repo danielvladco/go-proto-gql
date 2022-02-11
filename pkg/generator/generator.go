@@ -293,7 +293,8 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 				continue
 			}
 
-			if oneof := df.GetOneOf(); oneof != nil {
+			// Internally `optional` fields are represented as a oneof, and as such should be skipped.
+			if oneof := df.GetOneOf(); oneof != nil && !df.AsFieldDescriptorProto().GetProto3Optional() {
 				opts := GraphqlOneofOptions(oneof.AsOneofDescriptorProto().GetOptions())
 				if opts.GetIgnore() {
 					continue

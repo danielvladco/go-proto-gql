@@ -28,7 +28,10 @@ func main() {
 	}
 
 	files, err := generate(req)
-	res := &pluginpb.CodeGeneratorResponse{File: files}
+	res := &pluginpb.CodeGeneratorResponse{
+		File:              files,
+		SupportedFeatures: proto.Uint64(uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)),
+	}
 	if err != nil {
 		res.Error = proto.String(err.Error())
 	}

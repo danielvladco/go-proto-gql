@@ -11,6 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ServiceClient is the client API for Service service.
@@ -67,7 +68,7 @@ func (c *serviceClient) Query1(ctx context.Context, in *Data, opts ...grpc.CallO
 }
 
 func (c *serviceClient) Publish(ctx context.Context, opts ...grpc.CallOption) (Service_PublishClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[0], "/pb.Service/Publish", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[0], "/pb.Service/Publish", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,7 @@ func (x *servicePublishClient) CloseAndRecv() (*Data, error) {
 }
 
 func (c *serviceClient) Subscribe(ctx context.Context, in *Data, opts ...grpc.CallOption) (Service_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[1], "/pb.Service/Subscribe", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[1], "/pb.Service/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (x *serviceSubscribeClient) Recv() (*Data, error) {
 }
 
 func (c *serviceClient) PubSub1(ctx context.Context, opts ...grpc.CallOption) (Service_PubSub1Client, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[2], "/pb.Service/PubSub1", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[2], "/pb.Service/PubSub1", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func (x *servicePubSub1Client) Recv() (*Data, error) {
 }
 
 func (c *serviceClient) InvalidSubscribe1(ctx context.Context, opts ...grpc.CallOption) (Service_InvalidSubscribe1Client, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[3], "/pb.Service/InvalidSubscribe1", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[3], "/pb.Service/InvalidSubscribe1", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func (x *serviceInvalidSubscribe1Client) CloseAndRecv() (*Data, error) {
 }
 
 func (c *serviceClient) InvalidSubscribe2(ctx context.Context, in *Data, opts ...grpc.CallOption) (Service_InvalidSubscribe2Client, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[4], "/pb.Service/InvalidSubscribe2", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[4], "/pb.Service/InvalidSubscribe2", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +231,7 @@ func (x *serviceInvalidSubscribe2Client) Recv() (*Data, error) {
 }
 
 func (c *serviceClient) InvalidSubscribe3(ctx context.Context, opts ...grpc.CallOption) (Service_InvalidSubscribe3Client, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[5], "/pb.Service/InvalidSubscribe3", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[5], "/pb.Service/InvalidSubscribe3", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +262,7 @@ func (x *serviceInvalidSubscribe3Client) Recv() (*Data, error) {
 }
 
 func (c *serviceClient) PubSub2(ctx context.Context, opts ...grpc.CallOption) (Service_PubSub2Client, error) {
-	stream, err := c.cc.NewStream(ctx, &_Service_serviceDesc.Streams[6], "/pb.Service/PubSub2", opts...)
+	stream, err := c.cc.NewStream(ctx, &Service_ServiceDesc.Streams[6], "/pb.Service/PubSub2", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +379,7 @@ type UnsafeServiceServer interface {
 }
 
 func RegisterServiceServer(s grpc.ServiceRegistrar, srv ServiceServer) {
-	s.RegisterService(&_Service_serviceDesc, srv)
+	s.RegisterService(&Service_ServiceDesc, srv)
 }
 
 func _Service_Mutate1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -643,7 +644,10 @@ func _Service_Name_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Service_serviceDesc = grpc.ServiceDesc{
+// Service_ServiceDesc is the grpc.ServiceDesc for Service service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Service_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Service",
 	HandlerType: (*ServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
@@ -774,7 +778,7 @@ type UnsafeTestServer interface {
 }
 
 func RegisterTestServer(s grpc.ServiceRegistrar, srv TestServer) {
-	s.RegisterService(&_Test_serviceDesc, srv)
+	s.RegisterService(&Test_ServiceDesc, srv)
 }
 
 func _Test_Name_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -813,7 +817,10 @@ func _Test_NewName_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Test_serviceDesc = grpc.ServiceDesc{
+// Test_ServiceDesc is the grpc.ServiceDesc for Test service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Test_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Test",
 	HandlerType: (*TestServer)(nil),
 	Methods: []grpc.MethodDesc{
@@ -876,7 +883,7 @@ func (c *queryClient) Mutate1(ctx context.Context, in *Data, opts ...grpc.CallOp
 }
 
 func (c *queryClient) Subscribe(ctx context.Context, in *Data, opts ...grpc.CallOption) (Query_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Query_serviceDesc.Streams[0], "/pb.Query/Subscribe", opts...)
+	stream, err := c.cc.NewStream(ctx, &Query_ServiceDesc.Streams[0], "/pb.Query/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -944,7 +951,7 @@ type UnsafeQueryServer interface {
 }
 
 func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
-	s.RegisterService(&_Query_serviceDesc, srv)
+	s.RegisterService(&Query_ServiceDesc, srv)
 }
 
 func _Query_Query1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1022,7 +1029,10 @@ func (x *querySubscribeServer) Send(m *Data) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-var _Query_serviceDesc = grpc.ServiceDesc{
+// Query_ServiceDesc is the grpc.ServiceDesc for Query service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Query_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{

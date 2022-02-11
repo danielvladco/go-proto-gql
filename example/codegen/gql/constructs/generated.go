@@ -281,21 +281,22 @@ type ComplexityRoot struct {
 	}
 
 	Scalars struct {
-		Bool     func(childComplexity int) int
-		Bytes    func(childComplexity int) int
-		Double   func(childComplexity int) int
-		Fixed32  func(childComplexity int) int
-		Fixed64  func(childComplexity int) int
-		Float    func(childComplexity int) int
-		Int32    func(childComplexity int) int
-		Int64    func(childComplexity int) int
-		Sfixed32 func(childComplexity int) int
-		Sfixed64 func(childComplexity int) int
-		Sint32   func(childComplexity int) int
-		Sint64   func(childComplexity int) int
-		StringX  func(childComplexity int) int
-		Uint32   func(childComplexity int) int
-		Uint64   func(childComplexity int) int
+		Bool           func(childComplexity int) int
+		Bytes          func(childComplexity int) int
+		Double         func(childComplexity int) int
+		Fixed32        func(childComplexity int) int
+		Fixed64        func(childComplexity int) int
+		Float          func(childComplexity int) int
+		Int32          func(childComplexity int) int
+		Int64          func(childComplexity int) int
+		Sfixed32       func(childComplexity int) int
+		Sfixed64       func(childComplexity int) int
+		Sint32         func(childComplexity int) int
+		Sint64         func(childComplexity int) int
+		StringOptional func(childComplexity int) int
+		StringX        func(childComplexity int) int
+		Uint32         func(childComplexity int) int
+		Uint64         func(childComplexity int) int
 	}
 
 	Timestamp struct {
@@ -1304,6 +1305,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Scalars.Sint64(childComplexity), true
 
+	case "Scalars.stringOptional":
+		if e.complexity.Scalars.StringOptional == nil {
+			break
+		}
+
+		return e.complexity.Scalars.StringOptional(childComplexity), true
+
 	case "Scalars.stringX":
 		if e.complexity.Scalars.StringX == nil {
 			break
@@ -1482,7 +1490,16 @@ input Foo_Foo2Input {
          .setNanos((int) ((millis % 1000) * 1000000)).build();
 
 
- Example 5: Compute Timestamp from current time in Python.
+ Example 5: Compute Timestamp from Java ` + "`" + `Instant.now()` + "`" + `.
+
+     Instant now = Instant.now();
+
+     Timestamp timestamp =
+         Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+             .setNanos(now.getNano()).build();
+
+
+ Example 6: Compute Timestamp from current time in Python.
 
      timestamp = Timestamp()
      timestamp.GetCurrentTime()
@@ -1586,7 +1603,16 @@ type GoogleProtobuf_Timestamp {
          .setNanos((int) ((millis % 1000) * 1000000)).build();
 
 
- Example 5: Compute Timestamp from current time in Python.
+ Example 5: Compute Timestamp from Java ` + "`" + `Instant.now()` + "`" + `.
+
+     Instant now = Instant.now();
+
+     Timestamp timestamp =
+         Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+             .setNanos(now.getNano()).build();
+
+
+ Example 6: Compute Timestamp from current time in Python.
 
      timestamp = Timestamp()
      timestamp.GetCurrentTime()
@@ -2016,6 +2042,7 @@ type Scalars {
 	"""
 	stringX: String
 	bytes: Bytes
+	stringOptional: String
 }
 input ScalarsInput {
 	double: Float
@@ -2037,6 +2064,7 @@ input ScalarsInput {
 	"""
 	stringX: String
 	bytes: Bytes
+	stringOptional: String
 }
 type Timestamp {
 	time: String
@@ -6668,6 +6696,38 @@ func (ec *executionContext) _Scalars_bytes(ctx context.Context, field graphql.Co
 	return ec.marshalOBytes2ᚕbyte(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Scalars_stringOptional(ctx context.Context, field graphql.CollectedField, obj *pb.Scalars) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Scalars",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StringOptional, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Timestamp_time(ctx context.Context, field graphql.CollectedField, obj *pb.Timestamp) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9192,6 +9252,14 @@ func (ec *executionContext) unmarshalInputScalarsInput(ctx context.Context, obj 
 			if err != nil {
 				return it, err
 			}
+		case "stringOptional":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stringOptional"))
+			it.StringOptional, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -10574,6 +10642,8 @@ func (ec *executionContext) _Scalars(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Scalars_stringX(ctx, field, obj)
 		case "bytes":
 			out.Values[i] = ec._Scalars_bytes(ctx, field, obj)
+		case "stringOptional":
+			out.Values[i] = ec._Scalars_stringOptional(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

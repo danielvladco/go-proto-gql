@@ -54,20 +54,9 @@ func (o DataInputResolvers) Param2(_ context.Context, obj *Data, data *string) e
 	return nil
 }
 
-func (o DataResolvers) Oneof(_ context.Context, obj *Data) (Data_Oneof, error) {
+func (o DataResolvers) Oneof3(_ context.Context, obj *Data) (Data_Oneof, error) {
 	return obj.Oneof, nil
 }
 
 type Data_Oneof interface{}
-
-func (o DataInputResolvers) Param3(_ context.Context, obj *Data, data *string) error {
-	obj.Oneof2 = &Data_Param3{Param3: *data}
-	return nil
-}
-
-func (o DataResolvers) Oneof2(_ context.Context, obj *Data) (Data_Oneof2, error) {
-	return obj.Oneof2, nil
-}
-
-type Data_Oneof2 interface{}
 type Foo2Input = Foo2
