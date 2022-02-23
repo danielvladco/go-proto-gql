@@ -22,6 +22,9 @@ func NewRegistry(files SchemaDescriptorList) Registry {
 		gqlFieldsByName: map[desc.Descriptor]map[string]*desc.FieldDescriptor{},
 	}
 	for _, f := range files {
+		for _, m := range f.GetQuery().Methods() {
+			v.methodsByName[m.Name] = m.MethodDescriptor
+		}
 		for _, m := range f.GetMutation().Methods() {
 			v.methodsByName[m.Name] = m.MethodDescriptor
 		}
