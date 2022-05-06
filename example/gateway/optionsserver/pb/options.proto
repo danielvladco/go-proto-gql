@@ -10,6 +10,9 @@ service Service {
     rpc Query1 (Data) returns (Data) {
         option (danielvladco.protobuf.graphql.rpc) = {type: QUERY};
     } // must be a query
+    rpc Query2 (Data) returns (Data) {
+        option (danielvladco.protobuf.graphql.rpc) = {type: QUERY};
+    } // must be a query
 
     rpc Publish (stream Data) returns (Data); // must be a mutation
     rpc Subscribe (Data) returns (stream Data); // must be a subscription

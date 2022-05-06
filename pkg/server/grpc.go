@@ -2,97 +2,78 @@ package server
 
 import (
 	"context"
+	"github.com/danielvladco/go-proto-gql/pkg/protoparser"
+	"google.golang.org/grpc/credentials"
 	"log"
 	"time"
 
-	"github.com/danielvladco/go-proto-gql/pkg/reflection"
+	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
+
+	"github.com/danielvladco/go-proto-gql/pkg/reflection"
 )
 
+type Grpc struct {
+	Services    []*Service
+	ImportPaths []string
+}
+
 type Caller interface {
-	Call(ctx context.Context, svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error)
+	Call(ctx context.Context, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error)
 }
 
 type caller struct {
 	serviceStub map[*desc.ServiceDescriptor]grpcdynamic.Stub
 }
 
-func NewReflectCaller(endpoints []string) (*caller, []*desc.FileDescriptor, []string, error) {
-	var descs []*desc.FileDescriptor
-
+func NewReflectCaller(config *Grpc) (_ Caller, descs []*desc.FileDescriptor, err error) {
+	c := &caller{serviceStub: map[*desc.ServiceDescriptor]grpcdynamic.Stub{}}
 	descsconn := map[*desc.FileDescriptor]*grpc.ClientConn{}
-	for _, e := range endpoints {
-		conn, err := grpc.Dial(e, grpc.WithInsecure())
-		if err != nil {
-			return nil, nil, nil, err
+	for _, e := range config.Services {
+		var options []grpc.DialOption
+		if e.Authentication != nil && e.Authentication.Tls != nil {
+			cred, err := credentials.NewServerTLSFromFile(e.Authentication.Tls.Certificate, e.Authentication.Tls.PrivateKey)
+			if err != nil {
+				return nil, nil, err
+			}
+			options = append(options, grpc.WithTransportCredentials(cred))
+		} else {
+			options = append(options, grpc.WithInsecure())
 		}
-		client := reflection.NewClient(conn)
-
-		tempdesc, err := client.ListPackages()
+		conn, err := grpc.Dial(e.Address, options...)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
-
-		for _, d := range tempdesc {
+		if e.Reflection {
+			newDescs, err := reflection.NewClientWithImportsResolver(conn).ListPackages()
+			if err != nil {
+				return nil, nil, err
+			}
+			descs = append(descs, newDescs...)
+		}
+		if e.ProtoFiles != nil {
+			newDescs, err := protoparser.Parse(config.ImportPaths, e.ProtoFiles)
+			if err != nil {
+				return nil, nil, err
+			}
+			descs = append(descs, newDescs...)
+		}
+		for _, d := range descs {
 			descsconn[d] = conn
-			descs = append(descs, d)
+			for _, svc := range d.GetServices() {
+				c.serviceStub[svc] = grpcdynamic.NewStub(descsconn[d])
+			}
 		}
 	}
 
-	origServices := map[*desc.ServiceDescriptor]grpcdynamic.Stub{}
-	for _, d := range descs {
-		for _, svc := range d.GetServices() {
-			origServices[svc] = grpcdynamic.NewStub(descsconn[d])
-		}
-	}
-
-	var filesToGenerate []string
-	//var protoFiles []*descriptor.FileDescriptorProto
-	for _, d := range descs {
-		//p := d.AsFileDescriptorProto()
-		//n := fmt.Sprintf("_%d_%s", i, p.GetName())
-		//p.Name = &n
-		//gopkg := "github.com/danielvladco/go-proto-gql/reflect/grpcserver1/pb;pb"
-		//p.Options.GoPackage = &gopkg
-		filesToGenerate = append(filesToGenerate, d.AsFileDescriptorProto().GetName())
-		//protoFiles = append(protoFiles, p)
-		for _, dp := range getDeps(d) {
-			//	protoFiles = append(protoFiles, dp.AsFileDescriptorProto())
-			descs = append(descs, dp)
-		}
-	}
-
-	return &caller{
-		serviceStub: origServices,
-	}, descs, filesToGenerate, nil
+	return c, descs, nil
 }
 
-func getDeps(file *desc.FileDescriptor) []*desc.FileDescriptor {
-	mp := map[*desc.FileDescriptor]struct{}{}
-	getAllDependencies(file, mp)
-	deps := make([]*desc.FileDescriptor, len(mp))
-	i := 0
-	for dp := range mp {
-		deps[i] = dp
-		i++
-	}
-	return deps
-}
-
-func getAllDependencies(file *desc.FileDescriptor, files map[*desc.FileDescriptor]struct{}) {
-	deps := file.GetDependencies()
-	for _, d := range deps {
-		files[d] = struct{}{}
-		getAllDependencies(d, files)
-	}
-}
-
-func (c caller) Call(ctx context.Context, svc *desc.ServiceDescriptor, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error) {
+func (c caller) Call(ctx context.Context, rpc *desc.MethodDescriptor, message proto.Message) (proto.Message, error) {
 	startTime := time.Now()
-	res, err := c.serviceStub[svc].InvokeRpc(ctx, rpc, message)
-	log.Printf("[INFO] grpc request took: %fms", float64(time.Since(startTime))/float64(time.Millisecond))
+	res, err := c.serviceStub[rpc.GetService()].InvokeRpc(ctx, rpc, message)
+	log.Printf("[INFO] grpc call %q took: %fms", rpc.GetFullyQualifiedName(), float64(time.Since(startTime))/float64(time.Millisecond))
 	return res, err
 }

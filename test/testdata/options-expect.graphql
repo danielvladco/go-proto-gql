@@ -1,0 +1,56 @@
+directive @Query on FIELD_DEFINITION
+directive @Service on FIELD_DEFINITION
+directive @Test on FIELD_DEFINITION
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+type Data {
+	stringX: String!
+	foo: Foo2!
+	double: [Float!]!
+	string2: String
+	foo2: Foo2
+	double2: [Float!]
+	bars: String @goField(name: "Bar")
+	str: String @goField(name: "String_")
+}
+input DataInput {
+	stringX: String!
+	foo: Foo2Input!
+	double: [Float!]!
+	string2: String
+	foo2: Foo2Input
+	double2: [Float!]
+	bars: String @goField(name: "Bar")
+	str: String @goField(name: "String_")
+}
+type Foo2 {
+	param1: String
+}
+input Foo2Input {
+	param1: String
+}
+type Mutation {
+	serviceMutate1(in: DataInput): Data @Service
+	serviceMutate2(in: DataInput): Data @Service
+	servicePublish(in: DataInput): Data @Service
+	servicePubSub1(in: DataInput): Data @Service
+	serviceInvalidSubscribe3(in: DataInput): Data @Service
+	servicePubSub2(in: DataInput): Data @Service
+	newName(in: DataInput): Data @Service
+	name(in: DataInput): Data @Test
+	newName0(in: DataInput): Data @Test
+	queryMutate1(in: DataInput): Data @Query
+}
+type Query {
+	serviceQuery1(in: DataInput): Data @Service
+	serviceInvalidSubscribe1(in: DataInput): Data @Service
+	queryQuery1(in: DataInput): Data @Query
+	queryQuery2(in: DataInput): Data @Query
+}
+type Subscription {
+	serviceSubscribe(in: DataInput): Data @Service
+	servicePubSub1(in: DataInput): Data @Service
+	serviceInvalidSubscribe2(in: DataInput): Data @Service
+	serviceInvalidSubscribe3(in: DataInput): Data @Service
+	servicePubSub2(in: DataInput): Data @Service
+	querySubscribe(in: DataInput): Data @Query
+}

@@ -19,4 +19,5 @@ unzip -o $ARCHIVE_NAME -d $ARCHIVE_NAME
 GOPATH="$(go env GOPATH)"
 mv $ARCHIVE_NAME/bin/protoc $GOPATH/bin
 rm -rf $GOPATH/include
-mv $ARCHIVE_NAME/include $GOPATH
+mkdir -p $GOPATH/include
+mv $ARCHIVE_NAME/include/* $GOPATH/include/google

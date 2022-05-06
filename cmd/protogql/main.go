@@ -2,18 +2,17 @@ package main
 
 import (
 	"flag"
+	"github.com/danielvladco/go-proto-gql/pkg/protoparser"
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/pluginpb"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/vektah/gqlparser/v2/formatter"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/pluginpb"
-
 	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	"github.com/vektah/gqlparser/v2/formatter"
 )
 
 type arrayFlags []string
@@ -39,43 +38,32 @@ func main() {
 	flag.Var(&importPaths, "I", "path")
 	flag.Var(&fileNames, "f", "path")
 	flag.Parse()
-
-	newFileNames, err := protoparse.ResolveFilenames(importPaths, fileNames...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	descs, err := protoparse.Parser{ImportPaths: importPaths}.ParseFiles(newFileNames...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var files []*descriptorpb.FileDescriptorProto
-	for _, d := range descs {
-		files = append(files, d.AsFileDescriptorProto())
-	}
-	goref, err := generator.NewGoRef(&pluginpb.CodeGeneratorRequest{
-		FileToGenerate: fileNames,
-		ProtoFile:      files,
+	descs, err := protoparser.Parse(importPaths, fileNames)
+	fatal(err)
+	p, err := protogen.Options{}.New(&pluginpb.CodeGeneratorRequest{
+		FileToGenerate:  fileNames,
+		ProtoFile:       generator.ResolveProtoFilesRecursively(descs).AsFileDescriptorProto(),
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, goref)
-	if err != nil {
-		log.Fatal(err)
-	}
+	fatal(err)
+	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, p)
+	fatal(err)
 	for _, schema := range gqlDesc {
 		if len(schema.FileDescriptors) < 1 {
 			log.Fatalf("unexpected number of proto descriptors: %d for gql schema", len(schema.FileDescriptors))
 		}
 		if len(schema.FileDescriptors) > 1 {
-			if err := generateFile(schema, true); err != nil {
-				log.Fatal(err)
-			}
+			err := generateFile(schema, true)
+			fatal(err)
 			break
 		}
-		if err := generateFile(schema, *merge); err != nil {
-			log.Fatal(err)
-		}
+		err := generateFile(schema, *merge)
+		fatal(err)
+	}
+}
+
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 

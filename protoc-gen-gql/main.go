@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"google.golang.org/protobuf/compiler/protogen"
 	"io/ioutil"
 	"log"
 	"os"
@@ -67,16 +68,16 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			extension = strings.Trim(value, ".")
 		}
 	}
+	p, err := protogen.Options{}.New(req)
+	if err != nil {
+		log.Fatal(err)
+	}
 	descs, err := generator.CreateDescriptorsFromProto(req)
 	if err != nil {
 		return nil, err
 	}
 
-	goref, err := generator.NewGoRef(req)
-	if err != nil {
-		return nil, err
-	}
-	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, goref)
+	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, p)
 	if err != nil {
 		return nil, err
 	}

@@ -23,9 +23,13 @@ func main() {
 	log.Fatal(s.Serve(l))
 }
 
-type service struct{ pb.UnimplementedServiceServer }
+type service struct{ pb.UnimplementedServiceServer  }
 
 func (s service) Mutate1(ctx context.Context, data *pb.Data) (*pb.Data, error) {
+	return data, nil
+}
+
+func (s service) Query2(ctx context.Context, data *pb.Data) (*pb.Data, error) {
 	return data, nil
 }
 
