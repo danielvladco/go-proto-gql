@@ -4,15 +4,16 @@ package pb
 
 import (
 	context "context"
-	any "github.com/golang/protobuf/ptypes/any"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ConstructsClient is the client API for Constructs service.
@@ -22,8 +23,8 @@ type ConstructsClient interface {
 	Scalars_(ctx context.Context, in *Scalars, opts ...grpc.CallOption) (*Scalars, error)
 	Repeated_(ctx context.Context, in *Repeated, opts ...grpc.CallOption) (*Repeated, error)
 	Maps_(ctx context.Context, in *Maps, opts ...grpc.CallOption) (*Maps, error)
-	Any_(ctx context.Context, in *any.Any, opts ...grpc.CallOption) (*Any, error)
-	Empty_(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Empty, error)
+	Any_(ctx context.Context, in *anypb.Any, opts ...grpc.CallOption) (*Any, error)
+	Empty_(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Empty, error)
 	Empty2_(ctx context.Context, in *EmptyRecursive, opts ...grpc.CallOption) (*EmptyNested, error)
 	Empty3_(ctx context.Context, in *Empty3, opts ...grpc.CallOption) (*Empty3, error)
 	Ref_(ctx context.Context, in *Ref, opts ...grpc.CallOption) (*Ref, error)
@@ -66,7 +67,7 @@ func (c *constructsClient) Maps_(ctx context.Context, in *Maps, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *constructsClient) Any_(ctx context.Context, in *any.Any, opts ...grpc.CallOption) (*Any, error) {
+func (c *constructsClient) Any_(ctx context.Context, in *anypb.Any, opts ...grpc.CallOption) (*Any, error) {
 	out := new(Any)
 	err := c.cc.Invoke(ctx, "/pb.Constructs/Any_", in, out, opts...)
 	if err != nil {
@@ -75,7 +76,7 @@ func (c *constructsClient) Any_(ctx context.Context, in *any.Any, opts ...grpc.C
 	return out, nil
 }
 
-func (c *constructsClient) Empty_(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Empty, error) {
+func (c *constructsClient) Empty_(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, "/pb.Constructs/Empty_", in, out, opts...)
 	if err != nil {
@@ -136,8 +137,8 @@ type ConstructsServer interface {
 	Scalars_(context.Context, *Scalars) (*Scalars, error)
 	Repeated_(context.Context, *Repeated) (*Repeated, error)
 	Maps_(context.Context, *Maps) (*Maps, error)
-	Any_(context.Context, *any.Any) (*Any, error)
-	Empty_(context.Context, *empty.Empty) (*Empty, error)
+	Any_(context.Context, *anypb.Any) (*Any, error)
+	Empty_(context.Context, *emptypb.Empty) (*Empty, error)
 	Empty2_(context.Context, *EmptyRecursive) (*EmptyNested, error)
 	Empty3_(context.Context, *Empty3) (*Empty3, error)
 	Ref_(context.Context, *Ref) (*Ref, error)
@@ -159,10 +160,10 @@ func (UnimplementedConstructsServer) Repeated_(context.Context, *Repeated) (*Rep
 func (UnimplementedConstructsServer) Maps_(context.Context, *Maps) (*Maps, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Maps_ not implemented")
 }
-func (UnimplementedConstructsServer) Any_(context.Context, *any.Any) (*Any, error) {
+func (UnimplementedConstructsServer) Any_(context.Context, *anypb.Any) (*Any, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Any_ not implemented")
 }
-func (UnimplementedConstructsServer) Empty_(context.Context, *empty.Empty) (*Empty, error) {
+func (UnimplementedConstructsServer) Empty_(context.Context, *emptypb.Empty) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Empty_ not implemented")
 }
 func (UnimplementedConstructsServer) Empty2_(context.Context, *EmptyRecursive) (*EmptyNested, error) {
@@ -190,7 +191,7 @@ type UnsafeConstructsServer interface {
 }
 
 func RegisterConstructsServer(s grpc.ServiceRegistrar, srv ConstructsServer) {
-	s.RegisterService(&_Constructs_serviceDesc, srv)
+	s.RegisterService(&Constructs_ServiceDesc, srv)
 }
 
 func _Constructs_Scalars__Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -248,7 +249,7 @@ func _Constructs_Maps__Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _Constructs_Any__Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(any.Any)
+	in := new(anypb.Any)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -260,13 +261,13 @@ func _Constructs_Any__Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/pb.Constructs/Any_",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConstructsServer).Any_(ctx, req.(*any.Any))
+		return srv.(ConstructsServer).Any_(ctx, req.(*anypb.Any))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Constructs_Empty__Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -278,7 +279,7 @@ func _Constructs_Empty__Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/pb.Constructs/Empty_",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConstructsServer).Empty_(ctx, req.(*empty.Empty))
+		return srv.(ConstructsServer).Empty_(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -373,7 +374,10 @@ func _Constructs_CallWithId_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Constructs_serviceDesc = grpc.ServiceDesc{
+// Constructs_ServiceDesc is the grpc.ServiceDesc for Constructs service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Constructs_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Constructs",
 	HandlerType: (*ConstructsServer)(nil),
 	Methods: []grpc.MethodDesc{

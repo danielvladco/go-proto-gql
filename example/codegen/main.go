@@ -70,6 +70,9 @@ func (d dummy) Dummy(ctx context.Context) (*bool, error) { panic("implement me")
 // submitting an issue or if the issue already exists, show activity on it so I know there is real interest.
 type optionsRoot struct{}
 
+func (r optionsRoot) Data() options.DataResolver           { return pb.DataResolvers{} }
+func (r optionsRoot) DataInput() options.DataInputResolver { return pb.DataInputResolvers{} }
+
 func (r optionsRoot) Mutation() options.MutationResolver {
 	return &optionsMutationQueryResolver{
 		ServiceResolvers: &pb.ServiceResolvers{Service: pb.ServiceServer(nil)},

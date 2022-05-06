@@ -306,7 +306,12 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 				continue
 			}
 
-			if oneof := df.GetOneOf(); oneof != nil {
+			// Internally `optional` fields are represented as a oneof, and as such should be skipped.
+			if oneof := df.GetOneOf(); oneof != nil && !df.AsFieldDescriptorProto().GetProto3Optional() {
+				opts := GraphqlOneofOptions(oneof.AsOneofDescriptorProto().GetOptions())
+				if opts.GetIgnore() {
+					continue
+				}
 				if !input {
 					if _, ok := outputOneofRegistrar[oneof]; ok {
 						continue
@@ -717,11 +722,15 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescr
 		types:      objTypes,
 	}
 	s.objects = append(s.objects, obj)
-
+	name := ToLowerFirst(CamelCase(oneof.GetName()))
+	opts := GraphqlOneofOptions(oneof.AsOneofDescriptorProto().GetOptions())
+	if opts.GetName() != "" {
+		name = opts.GetName()
+	}
 	return &FieldDescriptor{
 		FieldDefinition: &ast.FieldDefinition{
 			Description: getDescription(oneof),
-			Name:        ToLowerFirst(CamelCase(oneof.GetName())),
+			Name:        name,
 			Type:        ast.NamedType(obj.Name, &ast.Position{}),
 			Position:    &ast.Position{},
 		},

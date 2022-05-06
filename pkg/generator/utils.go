@@ -43,6 +43,16 @@ func GraphqlFieldOptions(opts proto.Message) *gqlpb.Field {
 	return nil
 }
 
+func GraphqlOneofOptions(opts proto.Message) *gqlpb.Oneof {
+	if opts != nil {
+		v := proto.GetExtension(opts, gqlpb.E_Oneof)
+		if v != nil && v.(*gqlpb.Oneof) != nil {
+			return v.(*gqlpb.Oneof)
+		}
+	}
+	return nil
+}
+
 // GoCamelCase camel-cases a protobuf name for use as a Go identifier.
 //
 // If there is an interior underscore followed by a lower case letter,
@@ -113,7 +123,7 @@ func CreateDescriptorsFromProto(req *pluginpb.CodeGeneratorRequest) (descs []*de
 }
 
 func ResolveProtoFilesRecursively(descs []*desc.FileDescriptor) (files FileDescriptors) {
-	for _,f := range descs {
+	for _, f := range descs {
 		files = append(files, ResolveProtoFilesRecursively(f.GetDependencies())...)
 		files = append(files, f)
 	}
@@ -122,12 +132,14 @@ func ResolveProtoFilesRecursively(descs []*desc.FileDescriptor) (files FileDescr
 }
 
 type FileDescriptors []*desc.FileDescriptor
+
 func (ds FileDescriptors) AsFileDescriptorProto() (files []*descriptor.FileDescriptorProto) {
 	for _, d := range ds {
 		files = append(files, d.AsFileDescriptorProto())
 	}
 	return
 }
+
 // Split splits the camelcase word and returns a list of words. It also
 // supports digits. Both lower camel case and upper camel case are supported.
 // For more info please check: http://en.wikipedia.org/wiki/CamelCase

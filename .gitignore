@@ -1,2 +1,12 @@
-# Created by .ignore support plugin (hsz.mobi)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
 .idea
+
+.DS_Store

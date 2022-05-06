@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	gqlpb "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
-	"github.com/golang/protobuf/proto"
-	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/reflect/protoreflect"
-
 	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	gqlpb "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func main() {
@@ -40,6 +40,7 @@ var (
 
 func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 	return func(p *protogen.Plugin) error {
+		p.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
 		schemas, err := generator.NewSchemas(descs, *merge, *svc, p)
 		if err != nil {
@@ -55,13 +56,17 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 			//InitFile(file)
 			for svcIndex, svc := range file.Services {
 				svcOpts := generator.GraphqlServiceOptions(svc.Desc.Options())
-				if svcOpts != nil && svcOpts.Ignore != nil && *svcOpts.Ignore {
+				if svcOpts.GetIgnore() {
 					continue
 				}
-				g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Server }`)
+				if svcOpts != nil && svcOpts.Upstream != nil && *svcOpts.Upstream == gqlpb.Upstream_UPSTREAM_CLIENT {
+					g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Client }`)
+				} else {
+					g.P(`type `, svc.GoName, `Resolvers struct { Service `, svc.GoName, `Server }`)
+				}
 				for rpcIndex, rpc := range svc.Methods {
 					rpcOpts := generator.GraphqlMethodOptions(rpc.Desc.Options())
-					if rpcOpts != nil && rpcOpts.Ignore != nil && *rpcOpts.Ignore {
+					if rpcOpts.GetIgnore() {
 						continue
 					}
 					// TODO handle streaming
@@ -76,7 +81,7 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 					default:
 						methodName = schema.GetMutation().UniqueName(file.Proto.Service[svcIndex], file.Proto.Service[svcIndex].Method[rpcIndex])
 					}
-					methodName = goMethodName(methodName)
+					methodName = goName(methodName)
 
 					typeIn := g.QualifiedGoIdent(rpc.Input.GoIdent)
 					typeOut := g.QualifiedGoIdent(rpc.Output.GoIdent)
@@ -98,12 +103,18 @@ func Generate(merge, svc *bool) func(*protogen.Plugin) error {
 		return nil
 	}
 }
+func goResolveName(name, optionName string) string {
+	if optionName == "" {
+		return name
+	}
+	return goName(optionName)
+}
 
-func goMethodName(name string) string {
+func goName(name string) string {
 	methodNameSplit := generator.SplitCamelCase(name)
 	var methodNameSplitNew []string
 	for _, m := range methodNameSplit {
-		if m == "id" || m == "Id" {
+		if m == "Id" {
 			m = "ID"
 		}
 		methodNameSplitNew = append(methodNameSplitNew, m)
@@ -147,9 +158,9 @@ func generateMapsAndOneofs(g *protogen.GeneratedFile, messages []*protogen.Messa
 			)
 
 			g.P(`
-type `, msg.GoIdent.GoName, `Input = `, msg.GoIdent.GoName, ` 
+type `, msg.GoIdent.GoName, `Input = `, msg.GoIdent.GoName, `
 type `, msg.GoIdent.GoName, ` struct {
-	Key `, keyType, ` 
+	Key `, keyType, `
 	Value `, valType, `
 }
 `)
@@ -162,7 +173,7 @@ type `, msg.GoIdent.GoName, ` struct {
 				continue
 			}
 			fieldOpts := generator.GraphqlFieldOptions(f.Desc.Options())
-			if fieldOpts != nil && fieldOpts.Ignore != nil && *fieldOpts.Ignore {
+			if fieldOpts.GetIgnore() {
 				continue
 			}
 			if !mapResolver {
@@ -172,7 +183,7 @@ type `, msg.GoIdent.GoName, ` struct {
 			mapResolver = true
 			g.P(`
 
-func (r `, msg.GoIdent.GoName, `Resolvers) `, f.GoName, `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (list []*`, f.Message.GoIdent, `, _ error) {
+func (r `, msg.GoIdent.GoName, `Resolvers) `, goResolveName(f.GoName, fieldOpts.GetName()), `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (list []*`, f.Message.GoIdent, `, _ error) {
 	for k,v := range obj.`, f.GoName, ` {
 		list = append(list, &`, f.Message.GoIdent, `{
 			Key:   k,
@@ -182,7 +193,7 @@ func (r `, msg.GoIdent.GoName, `Resolvers) `, f.GoName, `(_ `, contextPkg.Ident(
 	return
 }
 
-func (m `, msg.GoIdent.GoName, `InputResolvers) `, f.GoName, `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `, data []*`, f.Message.GoIdent, `) error {
+func (m `, msg.GoIdent.GoName, `InputResolvers) `, goResolveName(f.GoName, fieldOpts.GetName()), `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `, data []*`, f.Message.GoIdent, `) error {
 	for _, v := range data {
 		obj.`, f.GoName, `[v.Key] = v.Value
 	}
@@ -193,6 +204,15 @@ func (m `, msg.GoIdent.GoName, `InputResolvers) `, f.GoName, `(_ `, contextPkg.I
 
 		var oneofResolver bool
 		for _, oneof := range msg.Oneofs {
+			// IsSynthetic will be true is this is a synthetic oneof. Currently this only occurs in `optional` fields,
+			// which should not be rendered as a standard oneof.
+			if oneof.Desc.IsSynthetic() {
+				continue
+			}
+			oneofOpts := generator.GraphqlOneofOptions(oneof.Desc.Options())
+			if oneofOpts.GetIgnore() {
+				continue
+			}
 			if !oneofResolver {
 				g.P("type ", msg.GoIdent.GoName, "Resolvers struct{}")
 				g.P("type ", msg.GoIdent.GoName, "InputResolvers struct{}")
@@ -212,7 +232,7 @@ func (o `, msg.GoIdent.GoName, `InputResolvers) `, f.GoName, `(_ `, contextPkg.I
 `)
 			}
 			g.P(`
-func (o `, msg.GoIdent.GoName, `Resolvers) `, oneof.GoName, `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (`, oneof.GoIdent, `, error) {
+func (o `, msg.GoIdent.GoName, `Resolvers) `, goResolveName(oneof.GoName, oneofOpts.GetName()), `(_ `, contextPkg.Ident("Context"), `, obj *`, msg.GoIdent, `) (`, oneof.GoIdent, `, error) {
 	return obj.`, oneof.GoName, `, nil
 }`)
 			g.P(`type `, oneof.GoIdent, " interface{}")
@@ -222,14 +242,10 @@ func (o `, msg.GoIdent.GoName, `Resolvers) `, oneof.GoName, `(_ `, contextPkg.Id
 	}
 }
 
-func noUnderscore(s string) string {
-	return strings.ReplaceAll(s, "_", "")
-}
-
-// same isEmpty but for mortals
+//IsEmpty same isEmpty but for mortals
 func IsEmpty(o *protogen.Message) bool { return isEmpty(o, generator.NewCallstack()) }
 
-// make sure objects are fulled with all objects
+//isEmpty make sure objects are fulled with all objects
 func isEmpty(o *protogen.Message, callstack generator.Callstack) bool {
 	callstack.Push(o)
 	defer callstack.Pop(o)
