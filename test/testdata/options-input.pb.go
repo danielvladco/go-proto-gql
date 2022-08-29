@@ -7,7 +7,7 @@
 package pb
 
 import (
-	_ "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
+	_ "github.com/catalystsquad/go-proto-gql/pkg/graphqlpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

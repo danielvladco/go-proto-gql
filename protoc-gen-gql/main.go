@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	"github.com/catalystsquad/go-proto-gql/pkg/generator"
 )
 
 func main() {
@@ -49,6 +49,7 @@ func main() {
 func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGeneratorResponse_File, err error) {
 	var genServiceDesc bool
 	var merge bool
+	var useFieldNames bool
 	var extension = generator.DefaultExtension
 	for _, param := range strings.Split(req.GetParameter(), ",") {
 		var value string
@@ -64,6 +65,10 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			if merge, err = strconv.ParseBool(value); err != nil {
 				return nil, err
 			}
+		case "useFieldNames":
+			if useFieldNames, err = strconv.ParseBool(value); err != nil {
+				return nil, err
+			}
 		case "ext":
 			extension = strings.Trim(value, ".")
 		}
@@ -77,7 +82,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 		return nil, err
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, p)
+	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, useFieldNames, p)
 	if err != nil {
 		return nil, err
 	}
