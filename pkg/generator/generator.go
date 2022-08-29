@@ -25,7 +25,7 @@ const (
 	DefaultExtension = "graphql"
 )
 
-func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
+func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useFieldNames bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
 	var files []*descriptor.FileDescriptorProto
 	for _, d := range descs {
 		files = append(files, d.AsFileDescriptorProto())
@@ -41,7 +41,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool,
 	if mergeSchemas {
 		schema := NewSchemaDescriptor(genServiceDesc, goref)
 		for _, file := range descs {
-			err := generateFile(file, schema)
+			err := generateFile(file, schema, useFieldNames)
 			if err != nil {
 				return nil, err
 			}
@@ -52,7 +52,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool,
 
 	for _, file := range descs {
 		schema := NewSchemaDescriptor(genServiceDesc, goref)
-		err := generateFile(file, schema)
+		err := generateFile(file, schema, useFieldNames)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool,
 	return
 }
 
-func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor) error {
+func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor, useFieldNames bool) error {
 	schema.FileDescriptors = append(schema.FileDescriptors, file)
 
 	for _, svc := range file.GetServices() {
@@ -76,12 +76,12 @@ func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor) error {
 			if rpcOpts != nil && rpcOpts.Ignore != nil && *rpcOpts.Ignore {
 				continue
 			}
-			in, err := schema.CreateObjects(rpc.GetInputType(), true)
+			in, err := schema.CreateObjects(rpc.GetInputType(), true, useFieldNames)
 			if err != nil {
 				return err
 			}
 
-			out, err := schema.CreateObjects(rpc.GetOutputType(), false)
+			out, err := schema.CreateObjects(rpc.GetOutputType(), false, useFieldNames)
 			if err != nil {
 				return err
 			}
@@ -257,7 +257,7 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 	return
 }
 
-func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *ObjectDescriptor, err error) {
+func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames bool) (obj *ObjectDescriptor, err error) {
 	// the case if trying to resolve a primitive as a object. In this case we just return nil
 	if d == nil {
 		return
@@ -317,7 +317,7 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 						continue
 					}
 					outputOneofRegistrar[oneof] = struct{}{}
-					field, err := s.createUnion(oneof)
+					field, err := s.createUnion(oneof, useFieldNames)
 					if err != nil {
 						return nil, err
 					}
@@ -342,14 +342,14 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 				})
 			}
 
-			fieldObj, err := s.CreateObjects(resolveFieldType(df), input)
+			fieldObj, err := s.CreateObjects(resolveFieldType(df), input, useFieldNames)
 			if err != nil {
 				return nil, err
 			}
 			if fieldObj == nil && df.GetMessageType() != nil {
 				continue
 			}
-			f, err := s.createField(df, fieldObj)
+			f, err := s.createField(df, fieldObj, input, useFieldNames)
 			if err != nil {
 				return nil, err
 			}
@@ -570,14 +570,24 @@ func getDescription(descs ...desc.Descriptor) string {
 	return strings.Join(description, "\n")
 }
 
-func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDescriptor) (_ *FieldDescriptor, err error) {
+func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDescriptor, input, useFieldNames bool) (_ *FieldDescriptor, err error) {
+	var fieldName string
+	if useFieldNames {
+		fieldName = field.GetName()
+	} else {
+		fieldName = field.GetJSONName()
+	}
 	fieldAst := &ast.FieldDefinition{
 		Description: getDescription(field),
-		Name:        ToLowerFirst(CamelCase(field.GetName())),
+		Name:        fieldName,
 		Type:        &ast.Type{Position: &ast.Position{}},
 		Position:    &ast.Position{},
 	}
 	fieldOpts := GraphqlFieldOptions(field.AsFieldDescriptorProto().GetOptions())
+	if fieldOpts != nil && input && fieldOpts.Default != nil {
+		// set field default values for input fields if it's specified
+		setFieldDefaultValue(fieldOpts, fieldAst, field)
+	}
 	if fieldOpts != nil && fieldOpts.Name != nil {
 		fieldAst.Name = *fieldOpts.Name
 		directive := &ast.DirectiveDefinition{
@@ -613,44 +623,50 @@ func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectD
 			}}
 		}
 	}
-	switch field.GetType() {
-	case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
-		descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		fieldAst.Type.NamedType = ScalarFloat
+	if fieldOpts != nil && fieldOpts.Type != nil {
+		// if a custom field type is specified, use it, this allows use of custom graphql scalars
+		fieldAst.Type.NamedType = *fieldOpts.Type
+	} else {
+		// get graphql field type based on proto field type
+		switch field.GetType() {
+		case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
+			descriptor.FieldDescriptorProto_TYPE_FLOAT:
+			fieldAst.Type.NamedType = ScalarFloat
 
-	case descriptor.FieldDescriptorProto_TYPE_BYTES:
-		scalar := s.createScalar(scalarBytes, "")
-		fieldAst.Type.NamedType = scalar.Name
+		case descriptor.FieldDescriptorProto_TYPE_BYTES:
+			scalar := s.createScalar(scalarBytes, "")
+			fieldAst.Type.NamedType = scalar.Name
 
-	case descriptor.FieldDescriptorProto_TYPE_INT64,
-		descriptor.FieldDescriptorProto_TYPE_SINT64,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
-		descriptor.FieldDescriptorProto_TYPE_INT32,
-		descriptor.FieldDescriptorProto_TYPE_SINT32,
-		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
-		descriptor.FieldDescriptorProto_TYPE_UINT32,
-		descriptor.FieldDescriptorProto_TYPE_FIXED32,
-		descriptor.FieldDescriptorProto_TYPE_UINT64,
-		descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		fieldAst.Type.NamedType = ScalarInt
+		case descriptor.FieldDescriptorProto_TYPE_INT64,
+			descriptor.FieldDescriptorProto_TYPE_SINT64,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+			descriptor.FieldDescriptorProto_TYPE_INT32,
+			descriptor.FieldDescriptorProto_TYPE_SINT32,
+			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+			descriptor.FieldDescriptorProto_TYPE_UINT32,
+			descriptor.FieldDescriptorProto_TYPE_FIXED32,
+			descriptor.FieldDescriptorProto_TYPE_UINT64,
+			descriptor.FieldDescriptorProto_TYPE_FIXED64:
+			fieldAst.Type.NamedType = ScalarInt
 
-	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		fieldAst.Type.NamedType = ScalarBoolean
+		case descriptor.FieldDescriptorProto_TYPE_BOOL:
+			fieldAst.Type.NamedType = ScalarBoolean
 
-	case descriptor.FieldDescriptorProto_TYPE_STRING:
-		fieldAst.Type.NamedType = ScalarString
+		case descriptor.FieldDescriptorProto_TYPE_STRING:
+			fieldAst.Type.NamedType = ScalarString
 
-	case descriptor.FieldDescriptorProto_TYPE_GROUP:
-		return nil, fmt.Errorf("proto2 groups are not supported please use proto3 syntax")
+		case descriptor.FieldDescriptorProto_TYPE_GROUP:
+			return nil, fmt.Errorf("proto2 groups are not supported please use proto3 syntax")
 
-	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		fieldAst.Type.NamedType = obj.Name
+		case descriptor.FieldDescriptorProto_TYPE_ENUM:
+			fieldAst.Type.NamedType = obj.Name
 
-	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		fieldAst.Type.NamedType = obj.Name
+		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+			fieldAst.Type.NamedType = obj.Name
 
-	default:
-		panic("unknown proto field type")
+		default:
+			panic("unknown proto field type")
+		}
 	}
 
 	if isRepeated(field) {
@@ -681,15 +697,15 @@ func (s *SchemaDescriptor) createScalar(name string, description string) *Object
 	return obj
 }
 
-func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor) (*FieldDescriptor, error) {
+func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, useFieldNames bool) (*FieldDescriptor, error) {
 	var types []string
 	var objTypes []*ObjectDescriptor
 	for _, choice := range oneof.GetChoices() {
-		obj, err := s.CreateObjects(resolveFieldType(choice), false)
+		obj, err := s.CreateObjects(resolveFieldType(choice), false, useFieldNames)
 		if err != nil {
 			return nil, err
 		}
-		f, err := s.createField(choice, obj)
+		f, err := s.createField(choice, obj, false, useFieldNames)
 		if err != nil {
 			return nil, err
 		}
@@ -759,3 +775,52 @@ const (
 )
 
 var graphqlReservedNames = []string{"__Directive", "__Type", "__Field", "__EnumValue", "__InputValue", "__Schema", "Int", "Float", "String", "Boolean", "ID"}
+
+func setFieldDefaultValue(field *gqlpb.Field, fieldAst *ast.FieldDefinition, fieldDescriptor *desc.FieldDescriptor) {
+	fieldAst.DefaultValue = &ast.Value{
+		Raw:  *field.Default,
+		Kind: getValueKindFromProtobufFieldType(fieldDescriptor),
+	}
+}
+
+func getValueKindFromProtobufFieldType(field *desc.FieldDescriptor) ast.ValueKind {
+	switch field.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
+		descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		return ast.FloatValue
+
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		return ast.BlockValue
+
+	case descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+		descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		return ast.IntValue
+
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return ast.BooleanValue
+
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return ast.StringValue
+
+	case descriptor.FieldDescriptorProto_TYPE_GROUP:
+		return 0
+
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		return ast.EnumValue
+
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		return ast.ObjectValue
+
+	default:
+		panic("unknown proto field type")
+	}
+	return 0
+}

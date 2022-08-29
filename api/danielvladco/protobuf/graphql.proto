@@ -34,6 +34,8 @@ message Field {
     optional string dirs = 3;
     optional bool ignore = 4;
     optional string name = 5;
+    optional string type = 6;
+    optional string default = 7;
 }
 
 message Rpc {

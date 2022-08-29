@@ -22,9 +22,10 @@ import (
 
 func Test_Generator(t *testing.T) {
 	tests := []struct {
-		name       string
-		inputFile  string
-		expectFile string
+		name          string
+		inputFile     string
+		expectFile    string
+		useFieldNames bool
 	}{{
 		name:       "Constructs",
 		inputFile:  "testdata/constructs-input.proto",
@@ -33,6 +34,11 @@ func Test_Generator(t *testing.T) {
 		name:       "Options",
 		inputFile:  "testdata/options-input.proto",
 		expectFile: "testdata/options-expect.graphql",
+	}, {
+		name:          "Options",
+		inputFile:     "testdata/options-input.proto",
+		expectFile:    "testdata/options-expect-fieldnames.graphql",
+		useFieldNames: true,
 	}}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,7 +57,7 @@ func Test_Generator(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			gqlDesc, err := generator.NewSchemas(descs, false, true, p)
+			gqlDesc, err := generator.NewSchemas(descs, false, true, tc.useFieldNames, p)
 			if err != nil {
 				t.Fatal(err)
 			}

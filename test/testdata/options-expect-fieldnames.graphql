@@ -3,7 +3,7 @@ directive @Service on FIELD_DEFINITION
 directive @Test on FIELD_DEFINITION
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 type Data {
-	stringX: String!
+	string_x: String!
 	foo: Foo2!
 	double: [Float!]!
 	string2: String
@@ -18,7 +18,7 @@ type Data {
 	snake_case_field: Boolean
 }
 input DataInput {
-	stringX: String!
+	string_x: String!
 	foo: Foo2Input!
 	double: [Float!]!
 	string2: String
