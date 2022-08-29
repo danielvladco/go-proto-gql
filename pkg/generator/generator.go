@@ -25,7 +25,7 @@ const (
 	DefaultExtension = "graphql"
 )
 
-func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useFieldNames bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
+func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useFieldNames, useBigIntType bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
 	var files []*descriptor.FileDescriptorProto
 	for _, d := range descs {
 		files = append(files, d.AsFileDescriptorProto())
@@ -41,7 +41,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useF
 	if mergeSchemas {
 		schema := NewSchemaDescriptor(genServiceDesc, goref)
 		for _, file := range descs {
-			err := generateFile(file, schema, useFieldNames)
+			err := generateFile(file, schema, useFieldNames, useBigIntType)
 			if err != nil {
 				return nil, err
 			}
@@ -52,7 +52,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useF
 
 	for _, file := range descs {
 		schema := NewSchemaDescriptor(genServiceDesc, goref)
-		err := generateFile(file, schema, useFieldNames)
+		err := generateFile(file, schema, useFieldNames, useBigIntType)
 		if err != nil {
 			return nil, err
 		}
@@ -63,7 +63,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useF
 	return
 }
 
-func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor, useFieldNames bool) error {
+func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor, useFieldNames, useBigIntType bool) error {
 	schema.FileDescriptors = append(schema.FileDescriptors, file)
 
 	for _, svc := range file.GetServices() {
@@ -76,12 +76,12 @@ func generateFile(file *desc.FileDescriptor, schema *SchemaDescriptor, useFieldN
 			if rpcOpts != nil && rpcOpts.Ignore != nil && *rpcOpts.Ignore {
 				continue
 			}
-			in, err := schema.CreateObjects(rpc.GetInputType(), true, useFieldNames)
+			in, err := schema.CreateObjects(rpc.GetInputType(), true, useFieldNames, useBigIntType)
 			if err != nil {
 				return err
 			}
 
-			out, err := schema.CreateObjects(rpc.GetOutputType(), false, useFieldNames)
+			out, err := schema.CreateObjects(rpc.GetOutputType(), false, useFieldNames, useBigIntType)
 			if err != nil {
 				return err
 			}
@@ -257,7 +257,7 @@ func (s *SchemaDescriptor) uniqueName(d desc.Descriptor, input bool) (name strin
 	return
 }
 
-func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames bool) (obj *ObjectDescriptor, err error) {
+func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames, useBigIntType bool) (obj *ObjectDescriptor, err error) {
 	// the case if trying to resolve a primitive as a object. In this case we just return nil
 	if d == nil {
 		return
@@ -317,7 +317,7 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 						continue
 					}
 					outputOneofRegistrar[oneof] = struct{}{}
-					field, err := s.createUnion(oneof, useFieldNames)
+					field, err := s.createUnion(oneof, useFieldNames, useBigIntType)
 					if err != nil {
 						return nil, err
 					}
@@ -342,14 +342,14 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 				})
 			}
 
-			fieldObj, err := s.CreateObjects(resolveFieldType(df), input, useFieldNames)
+			fieldObj, err := s.CreateObjects(resolveFieldType(df), input, useFieldNames, useBigIntType)
 			if err != nil {
 				return nil, err
 			}
 			if fieldObj == nil && df.GetMessageType() != nil {
 				continue
 			}
-			f, err := s.createField(df, fieldObj, input, useFieldNames)
+			f, err := s.createField(df, fieldObj, input, useFieldNames, useBigIntType)
 			if err != nil {
 				return nil, err
 			}
@@ -570,7 +570,7 @@ func getDescription(descs ...desc.Descriptor) string {
 	return strings.Join(description, "\n")
 }
 
-func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDescriptor, input, useFieldNames bool) (_ *FieldDescriptor, err error) {
+func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectDescriptor, input, useFieldNames, useBigIntType bool) (_ *FieldDescriptor, err error) {
 	var fieldName string
 	if useFieldNames {
 		fieldName = field.GetName()
@@ -636,17 +636,22 @@ func (s *SchemaDescriptor) createField(field *desc.FieldDescriptor, obj *ObjectD
 		case descriptor.FieldDescriptorProto_TYPE_BYTES:
 			scalar := s.createScalar(scalarBytes, "")
 			fieldAst.Type.NamedType = scalar.Name
-
 		case descriptor.FieldDescriptorProto_TYPE_INT64,
 			descriptor.FieldDescriptorProto_TYPE_SINT64,
 			descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+			descriptor.FieldDescriptorProto_TYPE_UINT64,
+			descriptor.FieldDescriptorProto_TYPE_FIXED64:
+			if useBigIntType {
+				fieldAst.Type.NamedType = ScalarBigInt
+			} else {
+				fieldAst.Type.NamedType = ScalarInt
+			}
+		case
 			descriptor.FieldDescriptorProto_TYPE_INT32,
 			descriptor.FieldDescriptorProto_TYPE_SINT32,
 			descriptor.FieldDescriptorProto_TYPE_SFIXED32,
 			descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32,
-			descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED64:
+			descriptor.FieldDescriptorProto_TYPE_FIXED32:
 			fieldAst.Type.NamedType = ScalarInt
 
 		case descriptor.FieldDescriptorProto_TYPE_BOOL:
@@ -697,15 +702,15 @@ func (s *SchemaDescriptor) createScalar(name string, description string) *Object
 	return obj
 }
 
-func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, useFieldNames bool) (*FieldDescriptor, error) {
+func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, useFieldNames, useBigIntType bool) (*FieldDescriptor, error) {
 	var types []string
 	var objTypes []*ObjectDescriptor
 	for _, choice := range oneof.GetChoices() {
-		obj, err := s.CreateObjects(resolveFieldType(choice), false, useFieldNames)
+		obj, err := s.CreateObjects(resolveFieldType(choice), false, useFieldNames, useBigIntType)
 		if err != nil {
 			return nil, err
 		}
-		f, err := s.createField(choice, obj, false, useFieldNames)
+		f, err := s.createField(choice, obj, false, useFieldNames, useBigIntType)
 		if err != nil {
 			return nil, err
 		}
@@ -771,6 +776,7 @@ const (
 	ScalarFloat   = "Float"
 	ScalarString  = "String"
 	ScalarBoolean = "Boolean"
+	ScalarBigInt  = "BigInt" // can be used for javascript graphql implementations using apollo's bigint type https://www.npmjs.com/package/apollo-type-bigint
 	ScalarID      = "ID"
 )
 

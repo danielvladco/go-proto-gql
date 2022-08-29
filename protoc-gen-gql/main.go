@@ -50,6 +50,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 	var genServiceDesc bool
 	var merge bool
 	var useFieldNames bool
+	var useBigIntType bool
 	var extension = generator.DefaultExtension
 	for _, param := range strings.Split(req.GetParameter(), ",") {
 		var value string
@@ -69,6 +70,10 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			if useFieldNames, err = strconv.ParseBool(value); err != nil {
 				return nil, err
 			}
+		case "useBigIntType":
+			if useBigIntType, err = strconv.ParseBool(value); err != nil {
+				return nil, err
+			}
 		case "ext":
 			extension = strings.Trim(value, ".")
 		}
@@ -82,7 +87,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 		return nil, err
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, useFieldNames, p)
+	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, useFieldNames, useBigIntType, p)
 	if err != nil {
 		return nil, err
 	}
