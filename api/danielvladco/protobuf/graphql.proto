@@ -1,7 +1,7 @@
 syntax = "proto2";
 package danielvladco.protobuf.graphql;
 
-option go_package = "github.com/danielvladco/go-proto-gql/pkg/graphqlpb";
+option go_package = "github.com/catalystsquad/go-proto-gql/pkg/graphqlpb";
 
 import "google/protobuf/descriptor.proto";
 
@@ -34,6 +34,8 @@ message Field {
     optional string dirs = 3;
     optional bool ignore = 4;
     optional string name = 5;
+    optional string type = 6;
+    optional string default = 7;
 }
 
 message Rpc {

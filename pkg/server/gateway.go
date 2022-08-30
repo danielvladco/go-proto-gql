@@ -7,7 +7,7 @@ import (
 	"github.com/nautilus/graphql"
 	"github.com/rs/cors"
 
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	"github.com/catalystsquad/go-proto-gql/pkg/generator"
 )
 
 func Server(cfg *Config) (http.Handler, error) {
@@ -21,7 +21,7 @@ func Server(cfg *Config) (http.Handler, error) {
 		return nil, err
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, true, true, nil)
+	gqlDesc, err := generator.NewSchemas(descs, true, true, false, false, nil)
 	if err != nil {
 		return nil, err
 	}

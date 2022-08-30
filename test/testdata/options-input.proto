@@ -1,6 +1,6 @@
 syntax = "proto3";
 package options;
-option go_package = "github.com/danielvladco/go-proto-gql/example;pb";
+option go_package = "github.com/catalystsquad/go-proto-gql/example;pb";
 
 import "api/danielvladco/protobuf/graphql.proto";
 
@@ -64,6 +64,11 @@ message Data {
     string bar = 7 [(danielvladco.protobuf.graphql.field) = {name: "bars"}];
     string string = 8 [(danielvladco.protobuf.graphql.field) = {name: "str"}];
     string ignore = 9 [(danielvladco.protobuf.graphql.field) = {ignore: true}];
+    int64 customType = 10[(danielvladco.protobuf.graphql.field) = {required: true, type: "String"}]; // test that the specified type is used instead of the protobuf type
+    int64 defaultIntValue = 11[(danielvladco.protobuf.graphql.field) = {default: "10"}]; // test that the specified type is used instead of the protobuf type
+    string defaultStringValue = 12[(danielvladco.protobuf.graphql.field) = {default: "stuff"}]; // test that the specified type is used instead of the protobuf type
+    bool defaultBoolValue = 13[(danielvladco.protobuf.graphql.field) = {default: "true"}]; // test that the specified type is used instead of the protobuf type
+    bool snake_case_field = 14[json_name = "snake_case_field",(danielvladco.protobuf.graphql.field) = {default: "true"}]; // test that the specified type is used instead of the protobuf type
 }
 
 message Foo2 {

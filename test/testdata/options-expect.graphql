@@ -11,6 +11,11 @@ type Data {
 	double2: [Float!]
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
+	customType: String!
+	defaultIntValue: Int
+	defaultStringValue: String
+	defaultBoolValue: Boolean
+	snake_case_field: Boolean
 }
 input DataInput {
 	stringX: String!
@@ -21,6 +26,11 @@ input DataInput {
 	double2: [Float!]
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
+	customType: String!
+	defaultIntValue: Int = 10
+	defaultStringValue: String = "stuff"
+	defaultBoolValue: Boolean = true
+	snake_case_field: Boolean = true
 }
 type Foo2 {
 	param1: String

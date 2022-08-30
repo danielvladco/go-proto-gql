@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
-	gqlpb "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
+	"github.com/catalystsquad/go-proto-gql/pkg/generator"
+	gqlpb "github.com/catalystsquad/go-proto-gql/pkg/graphqlpb"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -16,6 +16,8 @@ import (
 func main() {
 	var svc = proto.Bool(false)
 	var merge = proto.Bool(false)
+	var useFieldNames = proto.Bool(false)
+	var useBigIntType = proto.Bool(false)
 	protogen.Options{ParamFunc: func(name, value string) error {
 		switch name {
 		case "svc":
@@ -26,9 +28,18 @@ func main() {
 			if b, err := strconv.ParseBool(value); err != nil {
 				*merge = b
 			}
+		case "useFieldNames":
+			if b, err := strconv.ParseBool(value); err != nil {
+				*useFieldNames = b
+			}
+		case "useBigIntType":
+			if b, err := strconv.ParseBool(value); err != nil {
+				*useBigIntType = b
+			}
 		}
+
 		return nil
-	}}.Run(Generate(merge, svc))
+	}}.Run(Generate(merge, svc, useFieldNames, useBigIntType))
 }
 
 var (
@@ -38,11 +49,11 @@ var (
 	contextPkg = protogen.GoImportPath("context")
 )
 
-func Generate(merge, svc *bool) func(*protogen.Plugin) error {
+func Generate(merge, svc, useFieldNames, useBigIntType *bool) func(*protogen.Plugin) error {
 	return func(p *protogen.Plugin) error {
 		p.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
-		schemas, err := generator.NewSchemas(descs, *merge, *svc, p)
+		schemas, err := generator.NewSchemas(descs, *merge, *svc, *useFieldNames, *useBigIntType, p)
 		if err != nil {
 			return err
 		}
