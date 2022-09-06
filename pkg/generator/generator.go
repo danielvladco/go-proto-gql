@@ -25,7 +25,10 @@ const (
 	DefaultExtension = "graphql"
 )
 
-func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useFieldNames, useBigIntType bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
+var ignoreProtos = []string{}
+
+func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useFieldNames, useBigIntType bool, ignoreProtoNames []string, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
+	ignoreProtos = ignoreProtoNames
 	var files []*descriptor.FileDescriptorProto
 	for _, d := range descs {
 		files = append(files, d.AsFileDescriptorProto())
@@ -276,7 +279,6 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 	}
 
 	s.createdObjects[createdObjectKey{d, input}] = obj
-
 	switch dd := d.(type) {
 	case *desc.MessageDescriptor:
 		if IsEmpty(dd) {
@@ -297,6 +299,9 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 		outputOneofRegistrar := map[*desc.OneOfDescriptor]struct{}{}
 
 		for _, df := range dd.GetFields() {
+			if shouldIgnore(df.GetFullyQualifiedName()) {
+				continue
+			}
 			fieldOpts := GraphqlFieldOptions(df.AsFieldDescriptorProto().GetOptions())
 			if fieldOpts != nil && fieldOpts.Ignore != nil && *fieldOpts.Ignore {
 				continue
@@ -305,7 +310,6 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 			if df.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE && IsEmpty(df.GetMessageType()) {
 				continue
 			}
-
 			// Internally `optional` fields are represented as a oneof, and as such should be skipped.
 			if oneof := df.GetOneOf(); oneof != nil && !df.AsFieldDescriptorProto().GetProto3Optional() {
 				opts := GraphqlOneofOptions(oneof.AsOneofDescriptorProto().GetOptions())
@@ -829,4 +833,17 @@ func getValueKindFromProtobufFieldType(field *desc.FieldDescriptor) ast.ValueKin
 		panic("unknown proto field type")
 	}
 	return 0
+}
+
+// shouldIgnore returns true if the fully qualified name of the protobuf field descriptor is in the configured
+// ignore list. This is different than the `ignore` setting, this works for nested protobuf definitions such as
+// google.protobuf.Struct combined with a custom type definition for JSONObject. You want the field generated in the
+// graphql schema, but not the nested struct fields and directives.
+func shouldIgnore(fullyQualifiedName string) bool {
+	for _, ignoredProto := range ignoreProtos {
+		if strings.Contains(fullyQualifiedName, ignoredProto) {
+			return true
+		}
+	}
+	return false
 }

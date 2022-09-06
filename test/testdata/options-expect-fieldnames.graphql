@@ -12,10 +12,11 @@ type Data {
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
 	customType: String!
-	defaultIntValue: Int
+	defaultIntValue: BigInt
 	defaultStringValue: String
 	defaultBoolValue: Boolean
 	snake_case_field: Boolean
+	struct_field: JSONObject
 }
 input DataInput {
 	string_x: String!
@@ -27,10 +28,11 @@ input DataInput {
 	bars: String @goField(name: "Bar")
 	str: String @goField(name: "String_")
 	customType: String!
-	defaultIntValue: Int = 10
+	defaultIntValue: BigInt = 10
 	defaultStringValue: String = "stuff"
 	defaultBoolValue: Boolean = true
 	snake_case_field: Boolean = true
+	struct_field: JSONObject
 }
 type Foo2 {
 	param1: String
@@ -56,6 +58,8 @@ type Query {
 	queryQuery1(in: DataInput): Data @Query
 	queryQuery2(in: DataInput): Data @Query
 }
+type Struct
+input StructInput
 type Subscription {
 	serviceSubscribe(in: DataInput): Data @Service
 	servicePubSub1(in: DataInput): Data @Service

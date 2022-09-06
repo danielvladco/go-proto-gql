@@ -3,6 +3,8 @@ package test
 import (
 	"bytes"
 	_ "embed"
+	"fmt"
+	"github.com/vektah/gqlparser/v2"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/formatter"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -26,6 +27,8 @@ func Test_Generator(t *testing.T) {
 		inputFile     string
 		expectFile    string
 		useFieldNames bool
+		useBigInt     bool
+		ignoreProtos  []string
 	}{{
 		name:       "Constructs",
 		inputFile:  "testdata/constructs-input.proto",
@@ -39,6 +42,8 @@ func Test_Generator(t *testing.T) {
 		inputFile:     "testdata/options-input.proto",
 		expectFile:    "testdata/options-expect-fieldnames.graphql",
 		useFieldNames: true,
+		useBigInt:     true,
+		ignoreProtos:  []string{"google.protobuf.Value", "google.protobuf.Struct"},
 	}}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,7 +62,7 @@ func Test_Generator(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			gqlDesc, err := generator.NewSchemas(descs, false, true, tc.useFieldNames, p)
+			gqlDesc, err := generator.NewSchemas(descs, false, true, tc.useFieldNames, tc.useBigInt, tc.ignoreProtos, p)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -88,7 +93,10 @@ func compareGraphql(t *testing.T, got, expect *ast.Schema) {
 	actualGraphql := &bytes.Buffer{}
 	formatter.NewFormatter(actualGraphql).FormatSchema(got)
 	formatter.NewFormatter(expectedGraphql).FormatSchema(expect)
-
+	fmt.Println("actual")
+	fmt.Println(actualGraphql.String())
+	fmt.Println("expected")
+	fmt.Println(expect)
 	if actualGraphql.String() != expectedGraphql.String() {
 		diff := difflib.UnifiedDiff{
 			A:        difflib.SplitLines(expectedGraphql.String()),

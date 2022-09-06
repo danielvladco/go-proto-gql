@@ -51,6 +51,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 	var merge bool
 	var useFieldNames bool
 	var useBigIntType bool
+	var ignoreProtos []string
 	var extension = generator.DefaultExtension
 	for _, param := range strings.Split(req.GetParameter(), ",") {
 		var value string
@@ -76,6 +77,9 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			}
 		case "ext":
 			extension = strings.Trim(value, ".")
+		case "ignoreProtos":
+			ignoreProtos = strings.Split(value, ",")
+
 		}
 	}
 	p, err := protogen.Options{}.New(req)
@@ -87,7 +91,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 		return nil, err
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, useFieldNames, useBigIntType, p)
+	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, useFieldNames, useBigIntType, ignoreProtos, p)
 	if err != nil {
 		return nil, err
 	}

@@ -29,6 +29,7 @@ func (i *arrayFlags) Set(value string) error {
 var (
 	importPaths   = arrayFlags{}
 	fileNames     = arrayFlags{}
+	ignoreProtos  = arrayFlags{}
 	svc           = flag.Bool("svc", false, "Use service annotations for nodes corresponding to a GRPC call")
 	merge         = flag.Bool("merge", false, "Merge all the proto files found in one directory into one graphql file")
 	extension     = flag.String("ext", generator.DefaultExtension, "Extension of the graphql file, Default: '.graphql'")
@@ -39,6 +40,7 @@ var (
 func main() {
 	flag.Var(&importPaths, "I", "path")
 	flag.Var(&fileNames, "f", "path")
+	flag.Var(&ignoreProtos, "ignoreProtos", "fully qualified protobuf names to ignore, for example 'google.protobuf.Value'")
 	flag.Parse()
 	descs, err := protoparser.Parse(importPaths, fileNames)
 	fatal(err)
@@ -47,7 +49,7 @@ func main() {
 		ProtoFile:      generator.ResolveProtoFilesRecursively(descs).AsFileDescriptorProto(),
 	})
 	fatal(err)
-	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, *useFieldNames, *useBigIntType, p)
+	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, *useFieldNames, *useBigIntType, ignoreProtos, p)
 	fatal(err)
 	for _, schema := range gqlDesc {
 		if len(schema.FileDescriptors) < 1 {

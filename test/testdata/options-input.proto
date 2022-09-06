@@ -3,6 +3,7 @@ package options;
 option go_package = "github.com/catalystsquad/go-proto-gql/example;pb";
 
 import "api/danielvladco/protobuf/graphql.proto";
+import "google/protobuf/struct.proto";
 
 service Service {
     rpc Mutate1 (Data) returns (Data); // must be a mutation
@@ -69,6 +70,7 @@ message Data {
     string defaultStringValue = 12[(danielvladco.protobuf.graphql.field) = {default: "stuff"}]; // test that the specified type is used instead of the protobuf type
     bool defaultBoolValue = 13[(danielvladco.protobuf.graphql.field) = {default: "true"}]; // test that the specified type is used instead of the protobuf type
     bool snake_case_field = 14[json_name = "snake_case_field",(danielvladco.protobuf.graphql.field) = {default: "true"}]; // test that the specified type is used instead of the protobuf type
+    google.protobuf.Struct struct_field = 15 [(danielvladco.protobuf.graphql.field) = {type: "JSONObject"}];
 }
 
 message Foo2 {

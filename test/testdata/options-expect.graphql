@@ -1,6 +1,7 @@
 directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
 directive @Test on FIELD_DEFINITION
+directive @ValueKind on INPUT_FIELD_DEFINITION
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 type Data {
 	stringX: String!
@@ -16,6 +17,7 @@ type Data {
 	defaultStringValue: String
 	defaultBoolValue: Boolean
 	snake_case_field: Boolean
+	structField: JSONObject
 }
 input DataInput {
 	stringX: String!
@@ -31,12 +33,19 @@ input DataInput {
 	defaultStringValue: String = "stuff"
 	defaultBoolValue: Boolean = true
 	snake_case_field: Boolean = true
+	structField: JSONObject
 }
 type Foo2 {
 	param1: String
 }
 input Foo2Input {
 	param1: String
+}
+type ListValue {
+	values: [Value!]
+}
+input ListValueInput {
+	values: [ValueInput!]
 }
 type Mutation {
 	serviceMutate1(in: DataInput): Data @Service
@@ -50,11 +59,28 @@ type Mutation {
 	newName0(in: DataInput): Data @Test
 	queryMutate1(in: DataInput): Data @Query
 }
+enum NullValue {
+	NULL_VALUE
+}
 type Query {
 	serviceQuery1(in: DataInput): Data @Service
 	serviceInvalidSubscribe1(in: DataInput): Data @Service
 	queryQuery1(in: DataInput): Data @Query
 	queryQuery2(in: DataInput): Data @Query
+}
+type Struct {
+	fields: [Struct_FieldsEntry!]
+}
+input StructInput {
+	fields: [Struct_FieldsEntryInput!]
+}
+type Struct_FieldsEntry {
+	key: String
+	value: Value
+}
+input Struct_FieldsEntryInput {
+	key: String
+	value: ValueInput
 }
 type Subscription {
 	serviceSubscribe(in: DataInput): Data @Service
@@ -63,4 +89,34 @@ type Subscription {
 	serviceInvalidSubscribe3(in: DataInput): Data @Service
 	servicePubSub2(in: DataInput): Data @Service
 	querySubscribe(in: DataInput): Data @Query
+}
+type Value {
+	kind: ValueKind
+}
+input ValueInput {
+	nullValue: NullValue @ValueKind
+	numberValue: Float @ValueKind
+	stringValue: String @ValueKind
+	boolValue: Boolean @ValueKind
+	structValue: StructInput @ValueKind
+	listValue: ListValueInput @ValueKind
+}
+union ValueKind = Value_NullValue | Value_NumberValue | Value_StringValue | Value_BoolValue | Value_StructValue | Value_ListValue
+type Value_BoolValue {
+	boolValue: Boolean
+}
+type Value_ListValue {
+	listValue: ListValue
+}
+type Value_NullValue {
+	nullValue: NullValue
+}
+type Value_NumberValue {
+	numberValue: Float
+}
+type Value_StringValue {
+	stringValue: String
+}
+type Value_StructValue {
+	structValue: Struct
 }

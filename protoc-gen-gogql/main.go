@@ -18,6 +18,7 @@ func main() {
 	var merge = proto.Bool(false)
 	var useFieldNames = proto.Bool(false)
 	var useBigIntType = proto.Bool(false)
+	var ignoreProtos = []string{}
 	protogen.Options{ParamFunc: func(name, value string) error {
 		switch name {
 		case "svc":
@@ -36,10 +37,12 @@ func main() {
 			if b, err := strconv.ParseBool(value); err != nil {
 				*useBigIntType = b
 			}
+		case "ignoreProtos":
+			ignoreProtos = strings.Split(value, ",")
 		}
 
 		return nil
-	}}.Run(Generate(merge, svc, useFieldNames, useBigIntType))
+	}}.Run(Generate(merge, svc, useFieldNames, useBigIntType, ignoreProtos))
 }
 
 var (
@@ -49,11 +52,11 @@ var (
 	contextPkg = protogen.GoImportPath("context")
 )
 
-func Generate(merge, svc, useFieldNames, useBigIntType *bool) func(*protogen.Plugin) error {
+func Generate(merge, svc, useFieldNames, useBigIntType *bool, ignoreProtos []string) func(*protogen.Plugin) error {
 	return func(p *protogen.Plugin) error {
 		p.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
-		schemas, err := generator.NewSchemas(descs, *merge, *svc, *useFieldNames, *useBigIntType, p)
+		schemas, err := generator.NewSchemas(descs, *merge, *svc, *useFieldNames, *useBigIntType, ignoreProtos, p)
 		if err != nil {
 			return err
 		}
