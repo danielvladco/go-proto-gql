@@ -4,12 +4,14 @@ go 1.18
 
 require (
 	github.com/99designs/gqlgen v0.17.16
+	github.com/catalystsquad/app-utils-go v1.0.5
 	github.com/golang/protobuf v1.5.2
 	github.com/jhump/protoreflect v1.12.0
 	github.com/nautilus/gateway v0.3.2
 	github.com/nautilus/graphql v0.0.21
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/rs/cors v1.8.2
+	github.com/sirupsen/logrus v1.8.1
 	github.com/vektah/gqlparser/v2 v2.5.0
 	google.golang.org/grpc v1.49.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
@@ -23,8 +25,9 @@ require (
 	github.com/graph-gophers/dataloader v5.0.0+incompatible // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rs/zerolog v1.26.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/urfave/cli/v2 v2.8.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect

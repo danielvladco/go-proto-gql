@@ -78,7 +78,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 		case "ext":
 			extension = strings.Trim(value, ".")
 		case "ignoreProtos":
-			ignoreProtos = strings.Split(value, ",")
+			ignoreProtos = strings.Split(value, " ")
 
 		}
 	}

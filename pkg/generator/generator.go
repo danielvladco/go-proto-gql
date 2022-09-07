@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/catalystsquad/app-utils-go/logging"
 	gqlpb "github.com/catalystsquad/go-proto-gql/pkg/graphqlpb"
 )
 
@@ -29,6 +31,7 @@ var ignoreProtos = []string{}
 
 func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc, useFieldNames, useBigIntType bool, ignoreProtoNames []string, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
 	ignoreProtos = ignoreProtoNames
+	logging.Log.WithFields(logrus.Fields{"ignoreProtos": ignoreProtos}).Info("generating schemas")
 	var files []*descriptor.FileDescriptorProto
 	for _, d := range descs {
 		files = append(files, d.AsFileDescriptorProto())
@@ -281,7 +284,7 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 	s.createdObjects[createdObjectKey{d, input}] = obj
 	switch dd := d.(type) {
 	case *desc.MessageDescriptor:
-		if IsEmpty(dd) {
+		if IsEmpty(dd) || shouldIgnore(dd.GetFullyQualifiedName()) {
 			return obj, nil
 		}
 		if IsAny(dd) {
@@ -299,9 +302,6 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 		outputOneofRegistrar := map[*desc.OneOfDescriptor]struct{}{}
 
 		for _, df := range dd.GetFields() {
-			if shouldIgnore(df.GetFullyQualifiedName()) {
-				continue
-			}
 			fieldOpts := GraphqlFieldOptions(df.AsFieldDescriptorProto().GetOptions())
 			if fieldOpts != nil && fieldOpts.Ignore != nil && *fieldOpts.Ignore {
 				continue
@@ -842,6 +842,7 @@ func getValueKindFromProtobufFieldType(field *desc.FieldDescriptor) ast.ValueKin
 func shouldIgnore(fullyQualifiedName string) bool {
 	for _, ignoredProto := range ignoreProtos {
 		if strings.Contains(fullyQualifiedName, ignoredProto) {
+			logging.Log.WithFields(logrus.Fields{"fqn": fullyQualifiedName}).Info("ignoring field")
 			return true
 		}
 	}

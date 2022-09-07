@@ -4,119 +4,119 @@ directive @Test on FIELD_DEFINITION
 directive @ValueKind on INPUT_FIELD_DEFINITION
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 type Data {
-	stringX: String!
-	foo: Foo2!
-	double: [Float!]!
-	string2: String
-	foo2: Foo2
-	double2: [Float!]
-	bars: String @goField(name: "Bar")
-	str: String @goField(name: "String_")
-	customType: String!
-	defaultIntValue: Int
-	defaultStringValue: String
-	defaultBoolValue: Boolean
-	snake_case_field: Boolean
-	structField: JSONObject
+  stringX: String!
+  foo: Foo2!
+  double: [Float!]!
+  string2: String
+  foo2: Foo2
+  double2: [Float!]
+  bars: String @goField(name: "Bar")
+  str: String @goField(name: "String_")
+  customType: String!
+  defaultIntValue: Int
+  defaultStringValue: String
+  defaultBoolValue: Boolean
+  snake_case_field: Boolean
+  structField: JSONObject
 }
 input DataInput {
-	stringX: String!
-	foo: Foo2Input!
-	double: [Float!]!
-	string2: String
-	foo2: Foo2Input
-	double2: [Float!]
-	bars: String @goField(name: "Bar")
-	str: String @goField(name: "String_")
-	customType: String!
-	defaultIntValue: Int = 10
-	defaultStringValue: String = "stuff"
-	defaultBoolValue: Boolean = true
-	snake_case_field: Boolean = true
-	structField: JSONObject
+  stringX: String!
+  foo: Foo2Input!
+  double: [Float!]!
+  string2: String
+  foo2: Foo2Input
+  double2: [Float!]
+  bars: String @goField(name: "Bar")
+  str: String @goField(name: "String_")
+  customType: String!
+  defaultIntValue: Int = 10
+  defaultStringValue: String = "stuff"
+  defaultBoolValue: Boolean = true
+  snake_case_field: Boolean = true
+  structField: JSONObject
 }
 type Foo2 {
-	param1: String
+  param1: String
 }
 input Foo2Input {
-	param1: String
+  param1: String
 }
 type ListValue {
-	values: [Value!]
+  values: [Value!]
 }
 input ListValueInput {
-	values: [ValueInput!]
+  values: [ValueInput!]
 }
 type Mutation {
-	serviceMutate1(in: DataInput): Data @Service
-	serviceMutate2(in: DataInput): Data @Service
-	servicePublish(in: DataInput): Data @Service
-	servicePubSub1(in: DataInput): Data @Service
-	serviceInvalidSubscribe3(in: DataInput): Data @Service
-	servicePubSub2(in: DataInput): Data @Service
-	newName(in: DataInput): Data @Service
-	name(in: DataInput): Data @Test
-	newName0(in: DataInput): Data @Test
-	queryMutate1(in: DataInput): Data @Query
+  serviceMutate1(in: DataInput): Data @Service
+  serviceMutate2(in: DataInput): Data @Service
+  servicePublish(in: DataInput): Data @Service
+  servicePubSub1(in: DataInput): Data @Service
+  serviceInvalidSubscribe3(in: DataInput): Data @Service
+  servicePubSub2(in: DataInput): Data @Service
+  newName(in: DataInput): Data @Service
+  name(in: DataInput): Data @Test
+  newName0(in: DataInput): Data @Test
+  queryMutate1(in: DataInput): Data @Query
 }
 enum NullValue {
-	NULL_VALUE
+  NULL_VALUE
 }
 type Query {
-	serviceQuery1(in: DataInput): Data @Service
-	serviceInvalidSubscribe1(in: DataInput): Data @Service
-	queryQuery1(in: DataInput): Data @Query
-	queryQuery2(in: DataInput): Data @Query
+  serviceQuery1(in: DataInput): Data @Service
+  serviceInvalidSubscribe1(in: DataInput): Data @Service
+  queryQuery1(in: DataInput): Data @Query
+  queryQuery2(in: DataInput): Data @Query
 }
 type Struct {
-	fields: [Struct_FieldsEntry!]
+  fields: [Struct_FieldsEntry!]
 }
 input StructInput {
-	fields: [Struct_FieldsEntryInput!]
+  fields: [Struct_FieldsEntryInput!]
 }
 type Struct_FieldsEntry {
-	key: String
-	value: Value
+  key: String
+  value: Value
 }
 input Struct_FieldsEntryInput {
-	key: String
-	value: ValueInput
+  key: String
+  value: ValueInput
 }
 type Subscription {
-	serviceSubscribe(in: DataInput): Data @Service
-	servicePubSub1(in: DataInput): Data @Service
-	serviceInvalidSubscribe2(in: DataInput): Data @Service
-	serviceInvalidSubscribe3(in: DataInput): Data @Service
-	servicePubSub2(in: DataInput): Data @Service
-	querySubscribe(in: DataInput): Data @Query
+  serviceSubscribe(in: DataInput): Data @Service
+  servicePubSub1(in: DataInput): Data @Service
+  serviceInvalidSubscribe2(in: DataInput): Data @Service
+  serviceInvalidSubscribe3(in: DataInput): Data @Service
+  servicePubSub2(in: DataInput): Data @Service
+  querySubscribe(in: DataInput): Data @Query
 }
 type Value {
-	kind: ValueKind
+  kind: ValueKind
 }
 input ValueInput {
-	nullValue: NullValue @ValueKind
-	numberValue: Float @ValueKind
-	stringValue: String @ValueKind
-	boolValue: Boolean @ValueKind
-	structValue: StructInput @ValueKind
-	listValue: ListValueInput @ValueKind
+  nullValue: NullValue @ValueKind
+  numberValue: Float @ValueKind
+  stringValue: String @ValueKind
+  boolValue: Boolean @ValueKind
+  structValue: StructInput @ValueKind
+  listValue: ListValueInput @ValueKind
 }
 union ValueKind = Value_NullValue | Value_NumberValue | Value_StringValue | Value_BoolValue | Value_StructValue | Value_ListValue
 type Value_BoolValue {
-	boolValue: Boolean
+  boolValue: Boolean
 }
 type Value_ListValue {
-	listValue: ListValue
+  listValue: ListValue
 }
 type Value_NullValue {
-	nullValue: NullValue
+  nullValue: NullValue
 }
 type Value_NumberValue {
-	numberValue: Float
+  numberValue: Float
 }
 type Value_StringValue {
-	stringValue: String
+  stringValue: String
 }
 type Value_StructValue {
-	structValue: Struct
+  structValue: Struct
 }

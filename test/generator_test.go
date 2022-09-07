@@ -3,8 +3,6 @@ package test
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
-	"github.com/vektah/gqlparser/v2"
 	"io"
 	"os"
 	"path/filepath"
@@ -75,8 +73,7 @@ func Test_Generator(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			expectedFormattedSchema, _ := gqlparser.LoadSchema(&ast.Source{Input: string(bb)})
-			compareGraphql(t, gqlDesc[0].AsGraphql(), expectedFormattedSchema)
+			compareGraphqlUsingFile(t, gqlDesc[0].AsGraphql(), string(bb))
 		})
 	}
 }
@@ -91,15 +88,30 @@ func relativeFile(filename string) string {
 func compareGraphql(t *testing.T, got, expect *ast.Schema) {
 	expectedGraphql := &bytes.Buffer{}
 	actualGraphql := &bytes.Buffer{}
-	formatter.NewFormatter(actualGraphql).FormatSchema(got)
-	formatter.NewFormatter(expectedGraphql).FormatSchema(expect)
-	fmt.Println("actual")
-	fmt.Println(actualGraphql.String())
-	fmt.Println("expected")
-	fmt.Println(expect)
+	formatter.NewFormatter(actualGraphql, formatter.WithIndent("  ")).FormatSchema(got)
+	formatter.NewFormatter(expectedGraphql, formatter.WithIndent("  ")).FormatSchema(expect)
+	os.WriteFile("actual", []byte(actualGraphql.String()), 0755)
 	if actualGraphql.String() != expectedGraphql.String() {
 		diff := difflib.UnifiedDiff{
 			A:        difflib.SplitLines(expectedGraphql.String()),
+			B:        difflib.SplitLines(actualGraphql.String()),
+			FromFile: "expect",
+			ToFile:   "got",
+			Context:  3,
+		}
+		t.Errorf("Generated graphql file does not match expectations")
+		str, _ := difflib.GetUnifiedDiffString(diff)
+		t.Errorf("%s", str)
+	}
+}
+
+func compareGraphqlUsingFile(t *testing.T, got *ast.Schema, expect string) {
+	actualGraphql := &bytes.Buffer{}
+	formatter.NewFormatter(actualGraphql, formatter.WithIndent("  ")).FormatSchema(got)
+	os.WriteFile("actual", []byte(actualGraphql.String()), 0755)
+	if actualGraphql.String() != expect {
+		diff := difflib.UnifiedDiff{
+			A:        difflib.SplitLines(expect),
 			B:        difflib.SplitLines(actualGraphql.String()),
 			FromFile: "expect",
 			ToFile:   "got",

@@ -38,7 +38,7 @@ func main() {
 				*useBigIntType = b
 			}
 		case "ignoreProtos":
-			ignoreProtos = strings.Split(value, ",")
+			ignoreProtos = strings.Split(value, " ")
 		}
 
 		return nil
