@@ -1,7 +1,7 @@
 directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
 directive @Test on FIELD_DEFINITION
-directive @ValueKind on INPUT_FIELD_DEFINITION
+directive @ValueKindDirective on INPUT_FIELD_DEFINITION
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 type Data {
   stringX: String!
@@ -91,17 +91,17 @@ type Subscription {
   querySubscribe(in: DataInput): Data @Query
 }
 type Value {
-  kind: ValueKind
+  kind: ValueKindUnion
 }
 input ValueInput {
-  nullValue: NullValue @ValueKind
-  numberValue: Float @ValueKind
-  stringValue: String @ValueKind
-  boolValue: Boolean @ValueKind
-  structValue: StructInput @ValueKind
-  listValue: ListValueInput @ValueKind
+  nullValue: NullValue @ValueKindDirective
+  numberValue: Float @ValueKindDirective
+  stringValue: String @ValueKindDirective
+  boolValue: Boolean @ValueKindDirective
+  structValue: StructInput @ValueKindDirective
+  listValue: ListValueInput @ValueKindDirective
 }
-union ValueKind = Value_NullValue | Value_NumberValue | Value_StringValue | Value_BoolValue | Value_StructValue | Value_ListValue
+union ValueKindUnion = Value_NullValue | Value_NumberValue | Value_StringValue | Value_BoolValue | Value_StructValue | Value_ListValue
 type Value_BoolValue {
   boolValue: Boolean
 }

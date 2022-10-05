@@ -332,7 +332,7 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input, useFieldNames
 				// create oneofs as directives for input objects
 				directive := &ast.DirectiveDefinition{
 					Description: getDescription(oneof),
-					Name:        s.uniqueName(oneof, input),
+					Name:        fmt.Sprintf("%sDirective", s.uniqueName(oneof, input)),
 					Locations:   []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
 					Position:    &ast.Position{Src: &ast.Source{}},
 				}
@@ -739,7 +739,7 @@ func (s *SchemaDescriptor) createUnion(oneof *desc.OneOfDescriptor, useFieldName
 		Definition: &ast.Definition{
 			Kind:        ast.Union,
 			Description: getDescription(oneof),
-			Name:        s.uniqueName(oneof, false),
+			Name:        fmt.Sprintf("%sUnion", s.uniqueName(oneof, false)),
 			Types:       types,
 			Position:    &ast.Position{},
 		},

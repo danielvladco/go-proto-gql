@@ -1,7 +1,7 @@
 directive @Constructs on FIELD_DEFINITION
-directive @Oneof_Oneof1 on INPUT_FIELD_DEFINITION
-directive @Oneof_Oneof2 on INPUT_FIELD_DEFINITION
-directive @Oneof_Oneof3 on INPUT_FIELD_DEFINITION
+directive @Oneof_Oneof1Directive on INPUT_FIELD_DEFINITION
+directive @Oneof_Oneof2Directive on INPUT_FIELD_DEFINITION
+directive @Oneof_Oneof3Directive on INPUT_FIELD_DEFINITION
 """Any is any json type"""
 scalar Any
 enum Bar {
@@ -226,21 +226,21 @@ type Mutation {
 }
 type Oneof {
   param1: String
-  oneof1: Oneof_Oneof1
-  oneof2: Oneof_Oneof2
-  oneof3: Oneof_Oneof3
+  oneof1: Oneof_Oneof1Union
+  oneof2: Oneof_Oneof2Union
+  oneof3: Oneof_Oneof3Union
 }
 input OneofInput {
   param1: String
-  param2: String @Oneof_Oneof1
-  param3: String @Oneof_Oneof1
-  param4: String @Oneof_Oneof2
-  param5: String @Oneof_Oneof2
-  param6: String @Oneof_Oneof3
+  param2: String @Oneof_Oneof1Directive
+  param3: String @Oneof_Oneof1Directive
+  param4: String @Oneof_Oneof2Directive
+  param5: String @Oneof_Oneof2Directive
+  param6: String @Oneof_Oneof3Directive
 }
-union Oneof_Oneof1 = Oneof_Param2 | Oneof_Param3
-union Oneof_Oneof2 = Oneof_Param4 | Oneof_Param5
-union Oneof_Oneof3 = Oneof_Param6
+union Oneof_Oneof1Union = Oneof_Param2 | Oneof_Param3
+union Oneof_Oneof2Union = Oneof_Param4 | Oneof_Param5
+union Oneof_Oneof3Union = Oneof_Param6
 type Oneof_Param2 {
   param2: String
 }
