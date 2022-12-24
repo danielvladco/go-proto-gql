@@ -2,7 +2,7 @@ syntax = "proto3";
 package optionsserver;
 option go_package = "github.com/danielvladco/go-proto-gql/gateway/optionsserver/pb;optionsserver";
 
-import "pb/graphql.proto";
+import "danielvladco/protobuf/graphql.proto";
 
 service Service {
     rpc Mutate1 (Data) returns (Data); // must be a mutation

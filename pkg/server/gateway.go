@@ -11,11 +11,6 @@ import (
 )
 
 func Server(cfg *Config) (http.Handler, error) {
-	if cfg.Playground == nil {
-		plg := true
-		cfg.Playground = &plg
-	}
-
 	caller, descs, err := NewReflectCaller(cfg.Grpc)
 	if err != nil {
 		return nil, err

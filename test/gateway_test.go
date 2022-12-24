@@ -93,8 +93,6 @@ func Test_Gateway(t *testing.T) {
 		compareGraphql(t, schema.Schema, expectedFormattedSchema)
 	})
 
-	//log.Printf("http://127.0.0.1:%d/playground'\n", gatewayServer.(*net.TCPAddr).Port)
-	//<-make(chan struct{})
 	tests := []struct {
 		name         string
 		query        string

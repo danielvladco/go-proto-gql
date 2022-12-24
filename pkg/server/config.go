@@ -26,3 +26,13 @@ type Config struct {
 	Address    string        `json:"address" yaml:"address"`
 	Tls        *Tls          `json:"tls" yaml:"tls"`
 }
+
+func DefaultConfig() *Config {
+	return &Config{
+		Address:    ":8080",
+		Cors:       &cors.Options{},
+		Grpc:       &Grpc{},
+		Playground: &[]bool{true}[0],
+		Tls:        nil,
+	}
+}

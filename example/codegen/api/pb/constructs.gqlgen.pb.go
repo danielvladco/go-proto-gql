@@ -4,8 +4,8 @@ import (
 	context "context"
 	fmt "fmt"
 	graphql "github.com/99designs/gqlgen/graphql"
-	anypb "google.golang.org/protobuf/types/known/anypb"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	any1 "github.com/golang/protobuf/ptypes/any"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	io "io"
 )
 
@@ -20,11 +20,11 @@ func (s *ConstructsResolvers) ConstructsRepeated(ctx context.Context, in *Repeat
 func (s *ConstructsResolvers) ConstructsMaps(ctx context.Context, in *Maps) (*Maps, error) {
 	return s.Service.Maps_(ctx, in)
 }
-func (s *ConstructsResolvers) ConstructsAny(ctx context.Context, in *anypb.Any) (*Any, error) {
+func (s *ConstructsResolvers) ConstructsAny(ctx context.Context, in *any1.Any) (*Any, error) {
 	return s.Service.Any_(ctx, in)
 }
 func (s *ConstructsResolvers) ConstructsEmpty(ctx context.Context) (*bool, error) {
-	_, err := s.Service.Empty_(ctx, &emptypb.Empty{})
+	_, err := s.Service.Empty_(ctx, &empty.Empty{})
 	return nil, err
 }
 func (s *ConstructsResolvers) ConstructsEmpty2(ctx context.Context) (*bool, error) {

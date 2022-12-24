@@ -18,7 +18,7 @@ import (
 type arrayFlags []string
 
 func (i *arrayFlags) String() string {
-	return "str list"
+	return strings.Join(*i, ",")
 }
 
 func (i *arrayFlags) Set(value string) error {
@@ -35,8 +35,8 @@ var (
 )
 
 func main() {
-	flag.Var(&importPaths, "I", "path")
-	flag.Var(&fileNames, "f", "path")
+	flag.Var(&importPaths, "I", "Specify the directory in which to search for imports. May be specified multiple times. May be specified multiple times.")
+	flag.Var(&fileNames, "f", "Parse proto files and generate graphql based on the options given. May be specified multiple times.")
 	flag.Parse()
 	descs, err := protoparser.Parse(importPaths, fileNames)
 	fatal(err)

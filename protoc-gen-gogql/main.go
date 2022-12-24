@@ -242,10 +242,10 @@ func (o `, msg.GoIdent.GoName, `Resolvers) `, goResolveName(oneof.GoName, oneofO
 	}
 }
 
-//IsEmpty same isEmpty but for mortals
+// IsEmpty same isEmpty but for mortals
 func IsEmpty(o *protogen.Message) bool { return isEmpty(o, generator.NewCallstack()) }
 
-//isEmpty make sure objects are fulled with all objects
+// isEmpty make sure objects are fulled with all objects
 func isEmpty(o *protogen.Message, callstack generator.Callstack) bool {
 	callstack.Push(o)
 	defer callstack.Pop(o)

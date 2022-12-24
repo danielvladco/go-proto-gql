@@ -2,19 +2,19 @@ schema:
   - pb/constructs.graphql
 
 exec:
-  filename: gql/constructs/generated.go
+  filename: graphql/constructs/generated.go
   package: constructs
 
 model:
-  filename: gql/constructs/model.go
+  filename: graphql/constructs/model.go
 
 autobind:
-  - "github.com/danielvladco/go-proto-gql/example/codegen/pb"
+  - "github.com/danielvladco/go-proto-gql/example/codegen/api/pb"
 
 models:
   Pb_Any:
     model:
-      - github.com/danielvladco/go-proto-gql/example/codegen/pb.Any
+      - github.com/danielvladco/go-proto-gql/example/codegen/api/pb.Any
   GoogleProtobuf_TimestampInput:
     model:
       - google.golang.org/protobuf/types/known/timestamppb.Timestamp

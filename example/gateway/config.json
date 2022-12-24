@@ -1,6 +1,0 @@
-{
-  "endpoints": [
-    "constructsserver:8081",
-    "optionsserver:8082"
-  ]
-}
