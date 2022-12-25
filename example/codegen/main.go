@@ -9,9 +9,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
-	"github.com/danielvladco/go-proto-gql/example/codegen/gql/constructs"
-	"github.com/danielvladco/go-proto-gql/example/codegen/gql/options"
-	"github.com/danielvladco/go-proto-gql/example/codegen/pb"
+	"github.com/danielvladco/go-proto-gql/example/codegen/api/graphql/constructs"
+	"github.com/danielvladco/go-proto-gql/example/codegen/api/graphql/options"
+	pb2 "github.com/danielvladco/go-proto-gql/example/codegen/api/pb"
 )
 
 const defaultPort = "8088"
@@ -42,14 +42,14 @@ func main() {
 
 type constructsRoot struct{}
 
-func (r constructsRoot) Maps() constructs.MapsResolver             { return pb.MapsResolvers{} }
-func (r constructsRoot) MapsInput() constructs.MapsInputResolver   { return pb.MapsInputResolvers{} }
-func (r constructsRoot) OneofInput() constructs.OneofInputResolver { return pb.OneofInputResolvers{} }
+func (r constructsRoot) Maps() constructs.MapsResolver             { return pb2.MapsResolvers{} }
+func (r constructsRoot) MapsInput() constructs.MapsInputResolver   { return pb2.MapsInputResolvers{} }
+func (r constructsRoot) OneofInput() constructs.OneofInputResolver { return pb2.OneofInputResolvers{} }
 func (r constructsRoot) Mutation() constructs.MutationResolver {
-	return &pb.ConstructsResolvers{Service: pb.ConstructsServer(nil)}
+	return &pb2.ConstructsResolvers{Service: pb2.ConstructsServer(nil)}
 }
 func (r constructsRoot) Oneof() constructs.OneofResolver {
-	return pb.OneofResolvers{}
+	return pb2.OneofResolvers{}
 }
 func (r constructsRoot) Query() constructs.QueryResolver {
 	return dummy{}
@@ -70,20 +70,20 @@ func (d dummy) Dummy(ctx context.Context) (*bool, error) { panic("implement me")
 // submitting an issue or if the issue already exists, show activity on it so I know there is real interest.
 type optionsRoot struct{}
 
-func (r optionsRoot) Data() options.DataResolver           { return pb.DataResolvers{} }
-func (r optionsRoot) DataInput() options.DataInputResolver { return pb.DataInputResolvers{} }
+func (r optionsRoot) Data() options.DataResolver           { return pb2.DataResolvers{} }
+func (r optionsRoot) DataInput() options.DataInputResolver { return pb2.DataInputResolvers{} }
 
 func (r optionsRoot) Mutation() options.MutationResolver {
 	return &optionsMutationQueryResolver{
-		ServiceResolvers: &pb.ServiceResolvers{Service: pb.ServiceServer(nil)},
-		QueryResolvers:   &pb.QueryResolvers{Service: pb.QueryServer(nil)},
+		ServiceResolvers: &pb2.ServiceResolvers{Service: pb2.ServiceServer(nil)},
+		QueryResolvers:   &pb2.QueryResolvers{Service: pb2.QueryServer(nil)},
 	}
 }
 
 func (r optionsRoot) Query() options.QueryResolver {
 	return &optionsMutationQueryResolver{
-		ServiceResolvers: &pb.ServiceResolvers{Service: pb.ServiceServer(nil)},
-		QueryResolvers:   &pb.QueryResolvers{Service: pb.QueryServer(nil)},
+		ServiceResolvers: &pb2.ServiceResolvers{Service: pb2.ServiceServer(nil)},
+		QueryResolvers:   &pb2.QueryResolvers{Service: pb2.QueryServer(nil)},
 	}
 }
 
@@ -92,44 +92,44 @@ func (r optionsRoot) Subscription() options.SubscriptionResolver {
 }
 
 type optionsMutationQueryResolver struct {
-	*pb.ServiceResolvers
-	*pb.TestResolvers
-	*pb.QueryResolvers
+	*pb2.ServiceResolvers
+	*pb2.TestResolvers
+	*pb2.QueryResolvers
 }
 
-func (o optionsMutationQueryResolver) ServicePublish(ctx context.Context, in *pb.Data) (*pb.Data, error) {
+func (o optionsMutationQueryResolver) ServicePublish(ctx context.Context, in *pb2.Data) (*pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsMutationQueryResolver) ServicePubSub1(ctx context.Context, in *pb.Data) (*pb.Data, error) {
+func (o optionsMutationQueryResolver) ServicePubSub1(ctx context.Context, in *pb2.Data) (*pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsMutationQueryResolver) ServiceInvalidSubscribe3(ctx context.Context, in *pb.Data) (*pb.Data, error) {
+func (o optionsMutationQueryResolver) ServiceInvalidSubscribe3(ctx context.Context, in *pb2.Data) (*pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsMutationQueryResolver) ServicePubSub2(ctx context.Context, in *pb.Data) (*pb.Data, error) {
+func (o optionsMutationQueryResolver) ServicePubSub2(ctx context.Context, in *pb2.Data) (*pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsMutationQueryResolver) ServiceInvalidSubscribe1(ctx context.Context, in *pb.Data) (*pb.Data, error) {
+func (o optionsMutationQueryResolver) ServiceInvalidSubscribe1(ctx context.Context, in *pb2.Data) (*pb2.Data, error) {
 	panic("implement me")
 }
 
 type optionsSubscriptionResolver struct{}
 
-func (o optionsSubscriptionResolver) ServiceSubscribe(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error) {
+func (o optionsSubscriptionResolver) ServiceSubscribe(ctx context.Context, in *pb2.Data) (<-chan *pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsSubscriptionResolver) ServicePubSub1(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error) {
+func (o optionsSubscriptionResolver) ServicePubSub1(ctx context.Context, in *pb2.Data) (<-chan *pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsSubscriptionResolver) ServiceInvalidSubscribe2(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error) {
+func (o optionsSubscriptionResolver) ServiceInvalidSubscribe2(ctx context.Context, in *pb2.Data) (<-chan *pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsSubscriptionResolver) ServiceInvalidSubscribe3(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error) {
+func (o optionsSubscriptionResolver) ServiceInvalidSubscribe3(ctx context.Context, in *pb2.Data) (<-chan *pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsSubscriptionResolver) ServicePubSub2(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error) {
+func (o optionsSubscriptionResolver) ServicePubSub2(ctx context.Context, in *pb2.Data) (<-chan *pb2.Data, error) {
 	panic("implement me")
 }
-func (o optionsSubscriptionResolver) QuerySubscribe(ctx context.Context, in *pb.Data) (<-chan *pb.Data, error) {
+func (o optionsSubscriptionResolver) QuerySubscribe(ctx context.Context, in *pb2.Data) (<-chan *pb2.Data, error) {
 	panic("implement me")
 }

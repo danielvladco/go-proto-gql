@@ -3,12 +3,10 @@ name: Go
 on: [ push ]
 
 jobs:
-
-  build:
-    name: Build
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
-
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
@@ -18,10 +16,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@master
 
-      - name: Build
-        run: CGO_ENABLED=0 GOOS=linux go build -v ./cmd/gateway
-
-      - name: Test and coverage
+      - name: Run tests with coverage
         run: |
           go test -v `go list ./... | grep -v example | grep -v tools` -coverprofile=coverage.tmp.txt -covermode=atomic -coverpkg=github.com/danielvladco/go-proto-gql/...
           cat coverage.tmp.txt | grep -v .pb.go > coverage.txt
@@ -34,6 +29,79 @@ jobs:
           flags: unittests
           name: codecov-umbrella
 
+  sanity_checks:
+    name: Sanity checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@master
+
+      - name: Go fmt
+        run: |
+          go fmt ./...
+
+          files=$(git diff --name-only)
+          if [[ -n $files ]]; then
+            echo "The following files are not formatted correctly:"
+            echo $files
+            exit 1
+          fi
+      - name: Go mod is tidy
+        run: |
+          go mod tidy
+          pushd example/codegen
+          go mod tidy
+          popd 
+          pushd example/codegen/api
+          go mod tidy
+          popd
+          
+          files=$(git diff --name-only)
+          if [[ -n $files ]]; then
+            echo "Detected changes to the files after mod tidy (please run `go mod tidy` and push again):"
+            echo $files
+            exit 1
+          fi
+
+      - name: Generated files are up to date
+        run: |
+          make
+          pushd example/codegen/api
+          make
+          popd 
+          pushd example/gateway
+          make
+          popd
+          
+          files=$(git diff --name-only)
+          if [[ -n $files ]]; then
+            echo "Detected changes to the files after generating (please run make and push again):"
+            echo $files
+            exit 1
+          fi
+
+  build_push_gateway:
+    name: Build & Push Gateway
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@master
+
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=linux go build -v ./cmd/gateway
+
       - name: Build and push Docker images
         uses: docker/build-push-action@v1.1.0
         with:
@@ -44,7 +112,7 @@ jobs:
           # Server address of Docker registry. If not set then will default to Docker Hub
           registry: docker.pkg.github.com
           # Docker repository to tag the image with
-          repository: ${{ github.repository }}danielvladco/go-proto-gql/gateway
+          repository: ${{ github.repository }}/gateway
           # Comma-delimited list of tags. These will be added to the registry/repository to form the image's tags
           tag_with_sha: true
           tag_with_ref: true

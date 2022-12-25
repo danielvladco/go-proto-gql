@@ -9,7 +9,7 @@ type Option func(p *protoparse.Parser)
 
 func WithSourceCodeInfo(v bool) Option {
 	return func(p *protoparse.Parser) {
-		 p.IncludeSourceCodeInfo = v
+		p.IncludeSourceCodeInfo = v
 	}
 }
 

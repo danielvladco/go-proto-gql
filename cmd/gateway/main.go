@@ -12,17 +12,19 @@ import (
 )
 
 var (
-	configFile = flag.String("cfg", "/opt/config.json", "")
+	configFile = flag.String("config", "", "The config file (if not set will use the default configuration)")
 )
 
 func main() {
 	flag.Parse()
 
-	f, err := os.Open(*configFile)
-	fatalOnErr(err)
-	cfg := &server.Config{}
-	err = yaml.NewDecoder(f).Decode(cfg)
-	fatalOnErr(err)
+	cfg := server.DefaultConfig()
+	if *configFile != "" {
+		f, err := os.Open(*configFile)
+		fatalOnErr(err)
+		err = yaml.NewDecoder(f).Decode(cfg)
+		fatalOnErr(err)
+	}
 
 	l, err := net.Listen("tcp", cfg.Address)
 	fatalOnErr(err)

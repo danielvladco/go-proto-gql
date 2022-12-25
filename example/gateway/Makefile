@@ -1,20 +1,12 @@
 .PHONY: generate start stop
 
-all: generate start
-
-start:
-	docker-compose up
-
-stop:
-	docker-compose down
-
 generate: gen-pb-options gen-grpc-options gen-pb-constructs gen-grpc-constructs
 
 gen-grpc-%:
-	protoc --go-grpc_out=paths=source_relative:. -I . -I ../../ ./$*server/pb/$*.proto
+	protoc --go-grpc_out=paths=source_relative:. -I . -I ../../api ./$*server/pb/$*.proto
 
 gen-pb-%:
-	protoc --go_out=paths=source_relative:. -I . -I ../../ ./$*server/pb/$*.proto
+	protoc --go_out=paths=source_relative:. -I . -I ../../api ./$*server/pb/$*.proto
 
 clean: clean-options clean-constructs
 

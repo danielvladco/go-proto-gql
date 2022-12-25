@@ -78,6 +78,8 @@ func relativeFile(filename string) string {
 }
 
 func compareGraphql(t *testing.T, got, expect *ast.Schema) {
+	t.Helper()
+
 	expectedGraphql := &bytes.Buffer{}
 	actualGraphql := &bytes.Buffer{}
 	formatter.NewFormatter(actualGraphql).FormatSchema(got)

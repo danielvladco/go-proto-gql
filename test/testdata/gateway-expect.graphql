@@ -5,7 +5,13 @@ directive @Oneof_Oneof3 on INPUT_FIELD_DEFINITION
 directive @Query on FIELD_DEFINITION
 directive @Service on FIELD_DEFINITION
 directive @Test on FIELD_DEFINITION
-directive @goField on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+"""
+The @specifiedBy built-in directive is used within the type system definition language to provide a scalar specification URL for specifying the behavior of custom scalar types.
+"""
+directive @specifiedBy(url: String!) on SCALAR
+
 """
 Any is any json type
 """
@@ -284,9 +290,11 @@ input OneofInput {
 	param5: String
 	param6: String
 }
-union Oneof_Oneof1
-union Oneof_Oneof2
-union Oneof_Oneof3
+
+union Oneof_Oneof1 = Oneof_Param2 | Oneof_Param3
+union Oneof_Oneof2 = Oneof_Param4 | Oneof_Param5
+union Oneof_Oneof3 = Oneof_Param6
+
 type Oneof_Param2 {
 	param2: String
 }
