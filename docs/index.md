@@ -6,4 +6,4 @@ There are three ways to use this library:
 2. Generating the graphql schema using [proto2graphql](3.proto2graphql.md) (use this if you don't want to install `protoc`)
 3. Configuring a [gateway](4.gateway.md) that will translate the messages from one protocol to other on the fly.
 
-Also check out the examples here: [example](../example)
+For more examples check: [example](https://github.com/danielvladco/go-proto-gql/tree/master/example)

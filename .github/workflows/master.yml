@@ -3,12 +3,38 @@ name: Go
 on: [ push ]
 
 jobs:
-
-  build:
-    name: Build
+  tests:
+    name: Tests
     runs-on: ubuntu-latest
+    needs: [ set_environment ]
     steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+        id: go
 
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@master
+
+      - name: Run tests with coverage
+        run: |
+          go test -v `go list ./... | grep -v example | grep -v tools` -coverprofile=coverage.tmp.txt -covermode=atomic -coverpkg=github.com/danielvladco/go-proto-gql/...
+          cat coverage.tmp.txt | grep -v .pb.go > coverage.txt
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.txt
+          flags: unittests
+          name: codecov-umbrella
+
+  sanity_checks:
+    name: Go fmt
+    runs-on: ubuntu-latest
+    needs: [ set_environment ]
+    steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
@@ -21,10 +47,26 @@ jobs:
       - name: Go fmt
         run: |
           go fmt ./...
-          
+
           files=$(git diff --name-only)
           if [[ -n $files ]]; then
             echo "The following files are not formatted correctly:"
+            echo $files
+            exit 1
+          fi
+      - name: Go mod is tidy
+        run: |
+          go mod tidy
+          pushd example/codegen
+          go mod tidy
+          popd 
+          pushd example/codegen/api
+          go mod tidy
+          popd
+          
+          files=$(git diff --name-only)
+          if [[ -n $files ]]; then
+            echo "Detected changes to the files after mod tidy (please run `go mod tidy` and push again):"
             echo $files
             exit 1
           fi
@@ -38,7 +80,7 @@ jobs:
           pushd example/gateway
           make
           popd
-
+          
           files=$(git diff --name-only)
           if [[ -n $files ]]; then
             echo "Detected changes to the files after generating (please run make and push again):"
@@ -46,38 +88,22 @@ jobs:
             exit 1
           fi
 
-      - name: Go mod is tidy
-        run: |
-          go mod tidy
-          pushd example/codegen
-          go mod tidy
-          popd 
-          pushd example/codegen/api
-          go mod tidy
-          popd
+  build_push_gateway:
+    name: Build & Push Gateway
+    runs-on: ubuntu-latest
+    needs: [ set_environment ]
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+        id: go
 
-          files=$(git diff --name-only)
-          if [[ -n $files ]]; then
-            echo "Detected changes to the files after mod tidy (please run `go mod tidy` and push again):"
-            echo $files
-            exit 1
-          fi
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@master
 
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux go build -v ./cmd/gateway
-
-      - name: Test and coverage
-        run: |
-          go test -v `go list ./... | grep -v example | grep -v tools` -coverprofile=coverage.tmp.txt -covermode=atomic -coverpkg=github.com/danielvladco/go-proto-gql/...
-          cat coverage.tmp.txt | grep -v .pb.go > coverage.txt
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v1.0.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
-          flags: unittests
-          name: codecov-umbrella
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v1.1.0
