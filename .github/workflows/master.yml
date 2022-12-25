@@ -6,7 +6,6 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-    needs: [ set_environment ]
     steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
@@ -31,9 +30,8 @@ jobs:
           name: codecov-umbrella
 
   sanity_checks:
-    name: Go fmt
+    name: Sanity checks
     runs-on: ubuntu-latest
-    needs: [ set_environment ]
     steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
@@ -91,7 +89,6 @@ jobs:
   build_push_gateway:
     name: Build & Push Gateway
     runs-on: ubuntu-latest
-    needs: [ set_environment ]
     steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
