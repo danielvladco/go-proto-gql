@@ -1,7 +1,7 @@
 [![codecov](https://codecov.io/gh/danielvladco/go-proto-gql/branch/refactor-and-e2e-tests/graph/badge.svg?token=L3N8kUGpGV)](https://codecov.io/gh/danielvladco/go-proto-gql)
 
 This project aims to solve the problem of communication between services that use different API protocols. 
-Such as GraphAL and gRPC.
+Such as GraphQL and gRPC.
 
 Let's say your backend services use gRPC for fast and reliable communication however your frontend uses GraphQL.
 Normally your only two options:
