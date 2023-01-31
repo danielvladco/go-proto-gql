@@ -1,6 +1,6 @@
 site_name: API Adapter
 site_dir: .mkdocs
-repo_url: https://github.com/danielvladco/go-proto-gql
+repo_url: https://github.com/tailor-inc/go-proto-gql
 markdown_extensions:
   - abbr
   - admonition

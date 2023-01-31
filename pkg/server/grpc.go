@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"github.com/danielvladco/go-proto-gql/pkg/protoparser"
+	"github.com/tailor-inc/go-proto-gql/pkg/protoparser"
 	"google.golang.org/grpc/credentials"
 	"log"
 	"time"
@@ -12,7 +12,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"google.golang.org/grpc"
 
-	"github.com/danielvladco/go-proto-gql/pkg/reflection"
+	"github.com/tailor-inc/go-proto-gql/pkg/reflection"
 )
 
 type Grpc struct {

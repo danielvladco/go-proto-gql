@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"google.golang.org/protobuf/compiler/protogen"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,10 +11,11 @@ import (
 	"strings"
 
 	"github.com/vektah/gqlparser/v2/formatter"
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	"github.com/tailor-inc/go-proto-gql/pkg/generator"
 )
 
 func main() {

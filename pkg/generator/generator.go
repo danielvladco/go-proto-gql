@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	gqlpb "github.com/danielvladco/go-proto-gql/pkg/graphqlpb"
+	gqlpb "github.com/tailor-inc/go-proto-gql/pkg/graphqlpb"
 )
 
 const (

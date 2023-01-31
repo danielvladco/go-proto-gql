@@ -18,7 +18,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/danielvladco/go-proto-gql/pkg/generator"
+	"github.com/tailor-inc/go-proto-gql/pkg/generator"
 )
 
 type any = map[string]interface{}

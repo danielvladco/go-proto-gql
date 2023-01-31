@@ -10,12 +10,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/danielvladco/go-proto-gql/pkg/server"
-	pb "github.com/danielvladco/go-proto-gql/test/testdata"
 	"github.com/golang/protobuf/proto"
 	any "github.com/golang/protobuf/ptypes/any"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	"github.com/nautilus/graphql"
+	"github.com/tailor-inc/go-proto-gql/pkg/server"
+	pb "github.com/tailor-inc/go-proto-gql/test/testdata"
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 	"google.golang.org/grpc"
@@ -193,8 +193,8 @@ func (o *optionsServiceMock) Name(ctx context.Context, data *pb.Data) (*pb.Data,
 const constructsScalarsQuery = `
 mutation {
   constructsScalars_(in: {
-    double: 1.1, float: 2.2, int32: 3, int64: -4, 
-    uint32: 5, uint64: 6, sint32: 7, sint64: 8, 
+    double: 1.1, float: 2.2, int32: 3, int64: -4,
+    uint32: 5, uint64: 6, sint32: 7, sint64: 8,
     fixed32: 9, fixed64: 10, sfixed32: 11, sfixed64: 12,
     bool: true, stringX: "test", bytes: "dGVzdA=="
   }) {
@@ -437,7 +437,7 @@ const constructsOneofsQuery = `
 mutation {
   constructsOneof_(
     in: {param1: "2", param3:"3", param5: "5", param6: "6"}
-  ){ 
+  ){
     param1
     oneof1 {
       __typename
