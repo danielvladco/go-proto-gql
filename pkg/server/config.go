@@ -20,11 +20,12 @@ type Service struct {
 	ProtoFiles     []string        `json:"proto_files" yaml:"proto_files"`
 }
 type Config struct {
-	Grpc       *Grpc         `json:"grpc" yaml:"grpc"`
-	Cors       *cors.Options `json:"cors" yaml:"cors"`
-	Playground *bool         `json:"playground" yaml:"playground"`
-	Address    string        `json:"address" yaml:"address"`
-	Tls        *Tls          `json:"tls" yaml:"tls"`
+	Grpc                 *Grpc         `json:"grpc" yaml:"grpc"`
+	Cors                 *cors.Options `json:"cors" yaml:"cors"`
+	Playground           *bool         `json:"playground" yaml:"playground"`
+	Address              string        `json:"address" yaml:"address"`
+	Tls                  *Tls          `json:"tls" yaml:"tls"`
+	OneOfDirectivePrefix string        `json:"oneof_directive_prefix" yaml:"oneofDirectivePrefix"`
 }
 
 func DefaultConfig() *Config {

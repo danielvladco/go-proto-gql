@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"google.golang.org/protobuf/compiler/protogen"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/vektah/gqlparser/v2/formatter"
 	"google.golang.org/protobuf/proto"
@@ -50,6 +51,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 	var genServiceDesc bool
 	var merge bool
 	var extension = generator.DefaultExtension
+	var oneofDirectivePrefix string
 	for _, param := range strings.Split(req.GetParameter(), ",") {
 		var value string
 		if i := strings.Index(param, "="); i >= 0 {
@@ -66,6 +68,8 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 			}
 		case "ext":
 			extension = strings.Trim(value, ".")
+		case "oneofDirectivePrefix":
+			oneofDirectivePrefix = value
 		}
 	}
 	p, err := protogen.Options{}.New(req)
@@ -77,7 +81,7 @@ func generate(req *pluginpb.CodeGeneratorRequest) (outFiles []*pluginpb.CodeGene
 		return nil, err
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, p)
+	gqlDesc, err := generator.NewSchemas(descs, merge, genServiceDesc, oneofDirectivePrefix, p)
 	if err != nil {
 		return nil, err
 	}

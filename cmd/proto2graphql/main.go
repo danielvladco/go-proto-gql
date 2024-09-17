@@ -27,11 +27,12 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 var (
-	importPaths = arrayFlags{}
-	fileNames   = arrayFlags{}
-	svc         = flag.Bool("svc", false, "Use service annotations for nodes corresponding to a GRPC call")
-	merge       = flag.Bool("merge", false, "Merge all the proto files found in one directory into one graphql file")
-	extension   = flag.String("ext", generator.DefaultExtension, "Extension of the graphql file, Default: '.graphql'")
+	importPaths          = arrayFlags{}
+	fileNames            = arrayFlags{}
+	svc                  = flag.Bool("svc", false, "Use service annotations for nodes corresponding to a GRPC call")
+	merge                = flag.Bool("merge", false, "Merge all the proto files found in one directory into one graphql file")
+	extension            = flag.String("ext", generator.DefaultExtension, "Extension of the graphql file, Default: '.graphql'")
+	oneofDirectivePrefix = flag.String("oneofDirectivePrefix", "", "Prefix for oneof directive")
 )
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 		ProtoFile:      generator.ResolveProtoFilesRecursively(descs).AsFileDescriptorProto(),
 	})
 	fatal(err)
-	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, p)
+	gqlDesc, err := generator.NewSchemas(descs, *merge, *svc, *oneofDirectivePrefix, p)
 	fatal(err)
 	for _, schema := range gqlDesc {
 		if len(schema.FileDescriptors) < 1 {

@@ -16,6 +16,7 @@ import (
 func main() {
 	var svc = proto.Bool(false)
 	var merge = proto.Bool(false)
+	var oneofDirectivePrefix = proto.String("")
 	protogen.Options{ParamFunc: func(name, value string) error {
 		switch name {
 		case "svc":
@@ -26,9 +27,11 @@ func main() {
 			if b, err := strconv.ParseBool(value); err != nil {
 				*merge = b
 			}
+		case "oneofDirectivePrefix":
+			*oneofDirectivePrefix = value
 		}
 		return nil
-	}}.Run(Generate(merge, svc))
+	}}.Run(Generate(merge, svc, oneofDirectivePrefix))
 }
 
 var (
@@ -38,11 +41,11 @@ var (
 	contextPkg = protogen.GoImportPath("context")
 )
 
-func Generate(merge, svc *bool) func(*protogen.Plugin) error {
+func Generate(merge, svc *bool, oneofDirectivePrefix *string) func(*protogen.Plugin) error {
 	return func(p *protogen.Plugin) error {
 		p.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 		descs, _ := generator.CreateDescriptorsFromProto(p.Request)
-		schemas, err := generator.NewSchemas(descs, *merge, *svc, p)
+		schemas, err := generator.NewSchemas(descs, *merge, *svc, *oneofDirectivePrefix, p)
 		if err != nil {
 			return err
 		}

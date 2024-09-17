@@ -22,13 +22,19 @@ import (
 
 func Test_Generator(t *testing.T) {
 	tests := []struct {
-		name       string
-		inputFile  string
-		expectFile string
+		name                 string
+		inputFile            string
+		expectFile           string
+		oneofDirectivePrefix string
 	}{{
 		name:       "Constructs",
 		inputFile:  "testdata/constructs-input.proto",
 		expectFile: "testdata/constructs-expect.graphql",
+	}, {
+		name:                 "Constructs oneof directive prefix",
+		inputFile:            "testdata/constructs-input.proto",
+		expectFile:           "testdata/constructs-expect-directive-prefix.graphql",
+		oneofDirectivePrefix: "Directive_",
 	}, {
 		name:       "Options",
 		inputFile:  "testdata/options-input.proto",
@@ -51,7 +57,7 @@ func Test_Generator(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			gqlDesc, err := generator.NewSchemas(descs, false, true, p)
+			gqlDesc, err := generator.NewSchemas(descs, false, true, tc.oneofDirectivePrefix, p)
 			if err != nil {
 				t.Fatal(err)
 			}

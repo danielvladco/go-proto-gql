@@ -16,7 +16,7 @@ func Server(cfg *Config) (http.Handler, error) {
 		return nil, err
 	}
 
-	gqlDesc, err := generator.NewSchemas(descs, true, true, nil)
+	gqlDesc, err := generator.NewSchemas(descs, true, true, cfg.OneOfDirectivePrefix, nil)
 	if err != nil {
 		return nil, err
 	}

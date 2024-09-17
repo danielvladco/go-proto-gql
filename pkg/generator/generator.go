@@ -25,7 +25,7 @@ const (
 	DefaultExtension = "graphql"
 )
 
-func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
+func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool, oneofDirectivePrefix string, plugin *protogen.Plugin) (schemas SchemaDescriptorList, err error) {
 	var files []*descriptor.FileDescriptorProto
 	for _, d := range descs {
 		files = append(files, d.AsFileDescriptorProto())
@@ -39,7 +39,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool,
 	}
 
 	if mergeSchemas {
-		schema := NewSchemaDescriptor(genServiceDesc, goref)
+		schema := NewSchemaDescriptor(genServiceDesc, oneofDirectivePrefix, goref)
 		for _, file := range descs {
 			err := generateFile(file, schema)
 			if err != nil {
@@ -51,7 +51,7 @@ func NewSchemas(descs []*desc.FileDescriptor, mergeSchemas, genServiceDesc bool,
 	}
 
 	for _, file := range descs {
-		schema := NewSchemaDescriptor(genServiceDesc, goref)
+		schema := NewSchemaDescriptor(genServiceDesc, oneofDirectivePrefix, goref)
 		err := generateFile(file, schema)
 		if err != nil {
 			return nil, err
@@ -126,13 +126,14 @@ func (s SchemaDescriptorList) GetForDescriptor(file *protogen.File) *SchemaDescr
 	return nil
 }
 
-func NewSchemaDescriptor(genServiceDesc bool, goref GoRef) *SchemaDescriptor {
+func NewSchemaDescriptor(genServiceDesc bool, oneofDirectivePrefix string, goref GoRef) *SchemaDescriptor {
 	sd := &SchemaDescriptor{
 		Directives:                 map[string]*ast.DirectiveDefinition{},
 		reservedNames:              map[string]desc.Descriptor{},
 		createdObjects:             map[createdObjectKey]*ObjectDescriptor{},
 		generateServiceDescriptors: genServiceDesc,
 		goRef:                      goref,
+		oneofDirectivePrefix:       oneofDirectivePrefix,
 	}
 	for _, name := range graphqlReservedNames {
 		sd.reservedNames[name] = nil
@@ -156,6 +157,7 @@ type SchemaDescriptor struct {
 	createdObjects map[createdObjectKey]*ObjectDescriptor
 
 	generateServiceDescriptors bool
+	oneofDirectivePrefix       string
 
 	goRef GoRef
 }
@@ -326,9 +328,11 @@ func (s *SchemaDescriptor) CreateObjects(d desc.Descriptor, input bool) (obj *Ob
 				}
 
 				// create oneofs as directives for input objects
+				directiveName := s.uniqueName(oneof, input)
+				directiveName = s.oneofDirectivePrefix + directiveName
 				directive := &ast.DirectiveDefinition{
 					Description: getDescription(oneof),
-					Name:        s.uniqueName(oneof, input),
+					Name:        directiveName,
 					Locations:   []ast.DirectiveLocation{ast.LocationInputFieldDefinition},
 					Position:    &ast.Position{Src: &ast.Source{}},
 				}
